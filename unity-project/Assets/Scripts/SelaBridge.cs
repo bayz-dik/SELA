@@ -9,11 +9,14 @@ using UnityEngine;
 
 public class SelaBridge : MonoBehaviour
 {
+#if UNITY_ANDROID
     private AndroidJavaObject unityBridge;
+#endif
     private bool readySent;
 
     void Start()
     {
+#if UNITY_ANDROID
         // Beri tahu Kotlin bahwa engine selesai boot.
         if (Application.platform == RuntimePlatform.Android)
         {
@@ -34,6 +37,9 @@ public class SelaBridge : MonoBehaviour
         {
             Debug.Log("[SelaBridge] Berjalan di Editor — mode standalone.");
         }
+#else
+        Debug.Log("[SelaBridge] Berjalan di Editor — mode standalone.");
+#endif
     }
 
     // ---------- Kotlin -> Unity (via UnitySendMessage) ----------
@@ -112,6 +118,7 @@ public class SelaBridge : MonoBehaviour
 
     public void NotifyCameraChanged(double lat, double lon, float zoom, float bearing, float pitch)
     {
+#if UNITY_ANDROID
         if (Application.platform != RuntimePlatform.Android) return;
         try
         {
@@ -124,10 +131,12 @@ public class SelaBridge : MonoBehaviour
         {
             Debug.LogWarning("[SelaBridge] nativeOnCameraChanged gagal: " + e.Message);
         }
+#endif
     }
 
     private void CallKotlin(string method, string arg)
     {
+#if UNITY_ANDROID
         if (Application.platform != RuntimePlatform.Android) return;
         try
         {
@@ -140,6 +149,7 @@ public class SelaBridge : MonoBehaviour
         {
             Debug.LogWarning("[SelaBridge] " + method + " gagal: " + e.Message);
         }
+#endif
     }
 
     // ---------- DTO (harus cocok dengan JSON dari Kotlin) ----------

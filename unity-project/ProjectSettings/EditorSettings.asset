@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!159 &1
+EditorSettings:
+  m_ObjectHideFlags: 0
+  serializedVersion: 9
+  m_ExternalVersionControlSupport: Visible Meta Files
+  m_SerializationMode: 2
+  m_LineEndingsForNewScripts: 2
+  m_DefaultBehaviorMode: 1
+  m_SpritePackerMode: 1
+  m_SpritePackerPaddingPower: 1
+  m_EtcTextureCompressorBehavior: 1
+  m_EtcTextureFastCompressor: 1
+  m_EtcTextureNormalCompressor: 2
+  m_EtcTextureBestCompressor: 4
+  m_ProjectGenerationIncludedExtensions: txt;md;asmdef;asmref;c;cc;cpp;cs;h;hpp;java;js;json;mat;shader;shadergraph;hlsl;uss;uxml;xml;config;cginc;compute;po;mo;pot;inputactions;playable;controller;overrideController;mask;anim;physicsMaterial;physicsMaterial2D
+  m_ProjectGenerationRootNamespace:
+  m_UserGeneratedProjectSuffix:
+  m_CollabEditorSettings:
+    inProgressEnabled: 1
+  m_EnableTextureStreamingInPlayMode: 1
+  m_EnableShaderCompilationInPlayMode: 1
+  m_EnterPlayModeOptionsEnabled: 0
+  m_EnterPlayModeOptions: 3
+  m_GameObjectNamingDigits: 1
+  m_GameObjectNamingScheme: 0
+  m_AssetPipelineMode: 1
+  m_CacheServerMode: 0
+  m_CacheServerEndpoint:
+  m_CacheServerNamespacePrefix: default
+  m_CacheServerEnableDownload: 1
+  m_CacheServerEnableUpload: 1
+  m_CacheServerEnableAuth: 0
+  m_CacheServerEnableTls: 0
+  m_AlwaysShowDeviceSimulator: 0
+  m_UseLegacyProbeSampleCount: 0

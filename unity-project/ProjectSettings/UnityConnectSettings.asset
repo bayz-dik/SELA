@@ -1,0 +1,14 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!310 &1
+UnityConnectSettings:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Enabled: 0
+  m_TestMode: 0
+  m_TestEventUrl:
+  m_EventNamespace:
+  m_ConfigUrl:
+  m_DashboardUrl:
+  m_TestConfigUrl:
+  m_TestDashboardUrl:

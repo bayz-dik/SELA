@@ -1,36 +1,27 @@
 # GitHub Actions — Build unityLibrary (Unity as a Library) untuk SELA.
 #
-# Cara pakai:
-# 1. Push folder unity-project/ ke repo GitHub
-# 2. Buat Unity Personal license (.ulf):
-#    - Install Unity Hub di PC mana saja, login, generate via manual activation
-# 3. Tambah secrets di repo:
-#    - UNITY_LICENSE  : isi file .ulf
-#    - UNITY_EMAIL    : email akun Unity
-#    - UNITY_PASSWORD : password akun Unity
-# 4. Push / workflow_dispatch → artifact unityLibrary siap download
+# STRATEGI AKTIF (per Okt 2026): game-ci v6 + aktivasi Personal via email/password.
+# - TIDAK butuh file .ulf (aktivasi manual .alf -> .ulf untuk Personal sudah mati)
+# - Secrets yang dibutuhkan: UNITY_EMAIL, UNITY_PASSWORD
+# - Workflow produksi ada di repo: .github/workflows/unity-ual-apk.yml
+#   (2 jobs: export-unity via game-ci, lalu build-apk via Gradle)
 #
-# Menggunakan game-ci/unity-builder (standar industri, gratis).
+# File ini adalah referensi/dokumentasi. Untuk build UAL saja:
+# gunakan buildMethod: SelaCiBuild.BuildAndroidLibrary
 
 name: Build unityLibrary (UAL)
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - 'unity-project/**'
-      - '.github/workflows/unity-ual.yml'
 
 env:
-  UNITY_VERSION: 6000.0.47f1   # Unity 6 LTS terbaru saat penulisan
+  UNITY_VERSION: 6000.0.47f1
 
 jobs:
   build-ual:
     name: Export unityLibrary (Android)
     runs-on: ubuntu-latest
     steps:
-      # 1. Bebaskan disk (image Unity besar)
       - name: Free disk space
         uses: jlumbroso/free-disk-space@main
         with:
@@ -42,7 +33,6 @@ jobs:
         with:
           lfs: true
 
-      # 2. Cache Unity Library (mempercepat build ulang)
       - name: Cache Unity Library
         uses: actions/cache@v4
         with:
@@ -51,23 +41,19 @@ jobs:
           restore-keys: |
             unity-library-${{ env.UNITY_VERSION }}-
 
-      # 3. Build via game-ci (dengan Android module)
       - name: Build unityLibrary
-        uses: game-ci/unity-builder@v4
+        uses: game-ci/unity-builder@v6
         env:
-          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
         with:
           projectPath: unity-project
-          unityVersion: ${{ env.UNITY_VERSION }}
           targetPlatform: Android
-          androidExportType: androidProject   # <-- kunci UAL: export sebagai Gradle project
+          androidExportType: androidStudioProject
           androidSymbolType: none
-          buildMethod: UalExportBuilder.ExportAndroidLibrary
+          buildMethod: SelaCiBuild.BuildAndroidLibrary
           customParameters: -exportPath ${{ github.workspace }}/unity-export
 
-      # 4. Upload hasil
       - name: Upload unityLibrary
         uses: actions/upload-artifact@v4
         with:
@@ -75,7 +61,6 @@ jobs:
           path: unity-export/unityLibrary
           retention-days: 30
 
-      # 5. Ringkasan ukuran
       - name: Report size
         run: |
           echo "### unityLibrary size" >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,80 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!30 &1
+GraphicsSettings:
+  m_ObjectHideFlags: 0
+  serializedVersion: 14
+  m_Deferred:
+    m_Mode: 0
+    m_ShadowQuality: 2
+    m_HDRMode: 1
+  m_DeferredPlus:
+    m_Mode: 0
+    m_ShadowQuality: 2
+    m_HDRMode: 1
+  m_AllowEnlightenSupportForUpgradedProject: 0
+  m_EnableEnlightenBakedGI: 0
+  m_EnableEnlightenRealtimeGI: 0
+  m_UseScriptableRenderPipelineBatching: 1
+  m_SRPBatcher: 1
+  m_ScriptableRenderPipeline: {fileID: 0}
+  m_ScriptableRenderPipelineSettings: {fileID: 0}
+  m_TransparentSortMode: 0
+  m_TransparencySortAxis: {x: 0, y: 0, z: 1}
+  m_DefaultRenderingPath: 1
+  m_DefaultMobileRenderingPath: 1
+  m_TierSettings:
+    Standalone:
+    - serializedVersion: 2
+      m_StandardShaderQuality: 2
+      m_ReflectionProbeBlending: 1
+      m_ReflectionProbeBoxProjection: 1
+      m_HDRMode: 1
+      m_HDRModeEnabled: 1
+    - serializedVersion: 2
+      m_StandardShaderQuality: 2
+      m_ReflectionProbeBlending: 1
+      m_ReflectionProbeBoxProjection: 1
+      m_HDRMode: 1
+      m_HDRModeEnabled: 1
+    - serializedVersion: 2
+      m_StandardShaderQuality: 0
+      m_ReflectionProbeBlending: 0
+      m_ReflectionProbeBoxProjection: 0
+      m_HDRMode: 0
+      m_HDRModeEnabled: 0
+    Android:
+    - serializedVersion: 2
+      m_StandardShaderQuality: 2
+      m_ReflectionProbeBlending: 1
+      m_ReflectionProbeBoxProjection: 1
+      m_HDRMode: 1
+      m_HDRModeEnabled: 0
+    - serializedVersion: 2
+      m_StandardShaderQuality: 2
+      m_ReflectionProbeBlending: 1
+      m_ReflectionProbeBoxProjection: 1
+      m_HDRMode: 1
+      m_HDRModeEnabled: 0
+    - serializedVersion: 2
+      m_StandardShaderQuality: 0
+      m_ReflectionProbeBlending: 0
+      m_ReflectionProbeBoxProjection: 0
+      m_HDRMode: 0
+      m_HDRModeEnabled: 0
+  m_LightmapStripping: 0
+  m_FogStripping: 0
+  m_InstancingStripping: 0
+  m_LightmapKeepPlain: 1
+  m_LightmapKeepDirCombined: 1
+  m_LightmapKeepDynamicPlain: 1
+  m_LightmapKeepDynamicDirCombined: 1
+  m_LightmapKeepShadowMask: 1
+  m_LightmapKeepSubtractive: 1
+  m_FogKeepLinear: 1
+  m_FogKeepExp: 1
+  m_FogKeepExp2: 1
+  m_AlbedoSwatchInfos: []
+  m_LightsUseLinearIntensity: 1
+  m_LightsUseColorTemperature: 0
+  m_LogDefaultsInitialized: 1

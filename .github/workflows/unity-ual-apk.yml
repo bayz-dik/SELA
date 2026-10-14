@@ -20,6 +20,7 @@ jobs:
           targetPlatform: Android
           projectPath: unity-project
           androidExportType: androidStudioProject
+          buildMethod: SelaCiBuild.BuildAndroidLibrary
           buildsPath: unity-export-out
 
       - name: Upload unityLibrary artifact

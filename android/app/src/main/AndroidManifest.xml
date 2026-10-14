@@ -1,0 +1,58 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Fitur #15 mesh: Nearby Connections butuh Bluetooth + lokasi -->
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" android:usesPermissionFlags="neverForLocation" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <!-- Fitur #125 noise meter -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- Fitur #57 pengingat kalender -->
+    <uses-permission android:name="android.permission.READ_CALENDAR" />
+    <!-- Fitur AR batch 2 (kamera opsional) -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.bluetooth_le" android:required="false" />
+    <application android:name=".SelaApplication" android:label="SELA" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher" android:theme="@style/Theme.Sela" android:allowBackup="false" android:usesCleartextTraffic="true" android:supportsRtl="true">
+        <activity android:name=".MainActivity" android:exported="true"
+            android:supportsPictureInPicture="true"
+            android:enableOnBackInvokedCallback="true">
+            <intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter>
+            <meta-data android:name="android.app.shortcuts" android:resource="@xml/shortcuts" />
+        </activity>
+        <receiver android:name=".widget.SelaWidgetProvider" android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="id.sela.widget.PREV_ROUTE" />
+                <action android:name="id.sela.widget.NEXT_ROUTE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/sela_widget_info" />
+        </receiver>
+        <!-- Fitur #96: Quick Settings tile -->
+        <service android:name=".power.SelaTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_stat_sela"
+            android:label="SELA"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+        <!-- OAuth ChatGPT untuk "Tanya Sela" (sela://oauth/callback) -->
+        <activity android:name=".assistant.OAuthCallbackActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:noHistory="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="sela" android:host="oauth" android:path="/callback" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

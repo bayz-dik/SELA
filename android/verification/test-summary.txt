@@ -1,0 +1,102 @@
+{
+  "app": {
+    "executions": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "unique_tests": 2,
+    "variants": {
+      "testDebugUnitTest": 2,
+      "testReleaseUnitTest": 2
+    }
+  },
+  "core/model": {
+    "executions": 13,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "unique_tests": 13,
+    "variants": {
+      "test": 13
+    }
+  },
+  "core/database": {
+    "executions": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "unique_tests": 3,
+    "variants": {
+      "testDebugUnitTest": 3,
+      "testReleaseUnitTest": 3
+    }
+  },
+  "core/network": {
+    "executions": 38,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "unique_tests": 19,
+    "variants": {
+      "testDebugUnitTest": 19,
+      "testReleaseUnitTest": 19
+    }
+  },
+  "core/location": {
+    "executions": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "unique_tests": 2,
+    "variants": {
+      "testDebugUnitTest": 2,
+      "testReleaseUnitTest": 2
+    }
+  },
+  "core/designsystem": {
+    "executions": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "unique_tests": 3,
+    "variants": {
+      "testDebugUnitTest": 3,
+      "testReleaseUnitTest": 3
+    }
+  },
+  "feature/map": {
+    "executions": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "unique_tests": 3,
+    "variants": {
+      "testDebugUnitTest": 3,
+      "testReleaseUnitTest": 3
+    }
+  },
+  "feature/search": {
+    "executions": 6,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "unique_tests": 3,
+    "variants": {
+      "testDebugUnitTest": 3,
+      "testReleaseUnitTest": 3
+    }
+  },
+  "feature/settings": {
+    "executions": 4,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "unique_tests": 2,
+    "variants": {
+      "testDebugUnitTest": 2,
+      "testReleaseUnitTest": 2
+    }
+  }
+}
+TOTAL unique_tests: 50
+TOTAL executions: 87

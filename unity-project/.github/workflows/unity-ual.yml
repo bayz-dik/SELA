@@ -1,0 +1,82 @@
+# GitHub Actions — Build unityLibrary (Unity as a Library) untuk SELA.
+#
+# Cara pakai:
+# 1. Push folder unity-project/ ke repo GitHub
+# 2. Buat Unity Personal license (.ulf):
+#    - Install Unity Hub di PC mana saja, login, generate via manual activation
+# 3. Tambah secrets di repo:
+#    - UNITY_LICENSE  : isi file .ulf
+#    - UNITY_EMAIL    : email akun Unity
+#    - UNITY_PASSWORD : password akun Unity
+# 4. Push / workflow_dispatch → artifact unityLibrary siap download
+#
+# Menggunakan game-ci/unity-builder (standar industri, gratis).
+
+name: Build unityLibrary (UAL)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'unity-project/**'
+      - '.github/workflows/unity-ual.yml'
+
+env:
+  UNITY_VERSION: 6000.0.47f1   # Unity 6 LTS terbaru saat penulisan
+
+jobs:
+  build-ual:
+    name: Export unityLibrary (Android)
+    runs-on: ubuntu-latest
+    steps:
+      # 1. Bebaskan disk (image Unity besar)
+      - name: Free disk space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          android: false
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      # 2. Cache Unity Library (mempercepat build ulang)
+      - name: Cache Unity Library
+        uses: actions/cache@v4
+        with:
+          path: unity-project/Library
+          key: unity-library-${{ env.UNITY_VERSION }}-${{ hashFiles('unity-project/Packages/manifest.json') }}
+          restore-keys: |
+            unity-library-${{ env.UNITY_VERSION }}-
+
+      # 3. Build via game-ci (dengan Android module)
+      - name: Build unityLibrary
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          projectPath: unity-project
+          unityVersion: ${{ env.UNITY_VERSION }}
+          targetPlatform: Android
+          androidExportType: androidProject   # <-- kunci UAL: export sebagai Gradle project
+          androidSymbolType: none
+          buildMethod: UalExportBuilder.ExportAndroidLibrary
+          customParameters: -exportPath ${{ github.workspace }}/unity-export
+
+      # 4. Upload hasil
+      - name: Upload unityLibrary
+        uses: actions/upload-artifact@v4
+        with:
+          name: unityLibrary
+          path: unity-export/unityLibrary
+          retention-days: 30
+
+      # 5. Ringkasan ukuran
+      - name: Report size
+        run: |
+          echo "### unityLibrary size" >> $GITHUB_STEP_SUMMARY
+          du -sh unity-export/unityLibrary >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_desc">Status bus TransJakarta live, jumlah bus aktif, dan favorit — tanpa membuka aplikasi.</string>
+    <string name="shortcut_halte_terdekat">Halte terdekat</string>
+    <string name="shortcut_favorit">Favorit</string>
+    <string name="shortcut_cari_rute">Cari rute</string>
+</resources>

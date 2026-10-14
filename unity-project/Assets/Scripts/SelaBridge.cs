@@ -2,44 +2,29 @@
 //
 // Tempelkan script ini pada GameObject bernama "SelaBridge" di scene utama.
 // Kotlin memanggil method-method di bawah via UnityPlayer.UnitySendMessage.
-// Balasan ke Kotlin via AndroidJavaObject -> id.sela.feature.unity.UnityBridge
+// Balasan ke Kotlin via reflection ke id.sela.feature.unity.UnityBridge
 // static methods (nativeOnUnityReady / nativeOnStopSelected / nativeOnCameraChanged).
+// Reflection murni: TANPA referensi compile-time ke modul Android JNI
+// (modul tsb tidak terinstall di semua environment build, mis. CI game-ci).
 
 using UnityEngine;
 
 public class SelaBridge : MonoBehaviour
 {
-#if UNITY_ANDROID
-    private AndroidJavaObject unityBridge;
-#endif
     private bool readySent;
 
     void Start()
     {
-#if UNITY_ANDROID
         // Beri tahu Kotlin bahwa engine selesai boot.
         if (Application.platform == RuntimePlatform.Android)
         {
-            try
-            {
-                using (var cls = new AndroidJavaClass("id.sela.feature.unity.UnityBridge"))
-                {
-                    cls.CallStatic("nativeOnUnityReady");
-                }
-                readySent = true;
-            }
-            catch (System.Exception e)
-            {
-                Debug.LogWarning("[SelaBridge] nativeOnUnityReady gagal: " + e.Message);
-            }
+            CallKotlinStatic("nativeOnUnityReady");
+            readySent = true;
         }
         else
         {
             Debug.Log("[SelaBridge] Berjalan di Editor — mode standalone.");
         }
-#else
-        Debug.Log("[SelaBridge] Berjalan di Editor — mode standalone.");
-#endif
     }
 
     // ---------- Kotlin -> Unity (via UnitySendMessage) ----------
@@ -118,38 +103,55 @@ public class SelaBridge : MonoBehaviour
 
     public void NotifyCameraChanged(double lat, double lon, float zoom, float bearing, float pitch)
     {
-#if UNITY_ANDROID
         if (Application.platform != RuntimePlatform.Android) return;
-        try
-        {
-            using (var cls = new AndroidJavaClass("id.sela.feature.unity.UnityBridge"))
-            {
-                cls.CallStatic("nativeOnCameraChanged", lat, lon, zoom, bearing, pitch);
-            }
-        }
-        catch (System.Exception e)
-        {
-            Debug.LogWarning("[SelaBridge] nativeOnCameraChanged gagal: " + e.Message);
-        }
-#endif
+        CallKotlinStatic("nativeOnCameraChanged", lat, lon, zoom, bearing, pitch);
     }
 
     private void CallKotlin(string method, string arg)
     {
-#if UNITY_ANDROID
         if (Application.platform != RuntimePlatform.Android) return;
+        CallKotlinStatic(method, arg);
+    }
+
+    // Panggil static method Kotlin via reflection murni.
+    //
+    // Tidak ada referensi compile-time ke AndroidJavaClass / AndroidJavaObject:
+    // modul Android JNI tidak terinstall di semua environment build (mis. CI),
+    // jadi type di-resolve saat runtime saja. Di luar Android (atau jika modul
+    // tidak ada), GetType -> null dan pemanggilan di-skip dengan aman.
+    private void CallKotlinStatic(string method, params object[] args)
+    {
         try
         {
-            using (var cls = new AndroidJavaClass("id.sela.feature.unity.UnityBridge"))
+            var ajcType = System.Type.GetType(
+                "UnityEngine.AndroidJavaClass, UnityEngine.AndroidJNIModule");
+            if (ajcType == null)
             {
-                cls.CallStatic(method, arg);
+                Debug.LogWarning("[SelaBridge] Modul Android JNI tidak tersedia; lewati " + method + ".");
+                return;
+            }
+            var cls = System.Activator.CreateInstance(
+                ajcType, new object[] { "id.sela.feature.unity.UnityBridge" });
+            try
+            {
+                var callStatic = ajcType.GetMethod(
+                    "CallStatic", new System.Type[] { typeof(string), typeof(object[]) });
+                if (callStatic == null)
+                {
+                    Debug.LogWarning("[SelaBridge] CallStatic tidak ditemukan.");
+                    return;
+                }
+                callStatic.Invoke(cls, new object[] { method, args });
+            }
+            finally
+            {
+                (cls as System.IDisposable)?.Dispose();
             }
         }
         catch (System.Exception e)
         {
             Debug.LogWarning("[SelaBridge] " + method + " gagal: " + e.Message);
         }
-#endif
     }
 
     // ---------- DTO (harus cocok dengan JSON dari Kotlin) ----------

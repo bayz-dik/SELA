@@ -129,7 +129,7 @@ public class QualityManager : MonoBehaviour
         QualitySettings.lodBias = lodBias;
         QualitySettings.pixelLightCount = pixelLightCount;
         QualitySettings.shadows = shadows
-            ? ShadowQuality.HardOnly : ShadowQuality.Disable;
+            ? UnityEngine.ShadowQuality.HardOnly : UnityEngine.ShadowQuality.Disable;
 
         // URP: matikan shadow via render pipeline asset jika ada
         var urp = GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;

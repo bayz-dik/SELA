@@ -124,8 +124,7 @@ public class JakartaSceneBuilder : MonoBehaviour
         if (roadBuilder != null)
         {
             roadBuilder.BuildRoads(arterials, isArterial: true);
-            roadBuilder.BuildRoads(
-                localRoads.ConvertAll(l => l), isArterial: false);
+            roadBuilder.BuildRoads(localRoads);
         }
 
         // 5. Gedung: blok komersial di dekat halte, residensial di sela
@@ -144,8 +143,7 @@ public class JakartaSceneBuilder : MonoBehaviour
         if (arterials.Count > 0)
             streetlightPlacer?.PlaceAlongPolylines(arterials, rng);
         else
-            streetlightPlacer?.PlaceAlongRoads(
-                localRoads.ConvertAll(l => l), rng);
+            streetlightPlacer?.PlaceAlongRoads(localRoads, rng);
 
         // 7. Lighting malam default
         lightingController?.SetTimeOfDay(21.5f);

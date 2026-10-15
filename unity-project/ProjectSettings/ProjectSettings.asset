@@ -88,7 +88,7 @@ PlayerSettings:
   androidKeystorePass:
   androidBundleVersionCode: 1
   androidMinSdkVersion: 26
-  androidTargetSdkVersion: 0
+  androidTargetSdkVersion: 35
   androidPreferredInstallLocation: 1
   aotOptions:
   stripEngineCode: 1
@@ -193,7 +193,7 @@ PlayerSettings:
     Android: 1
   m_AndroidBundleVersionCode: 1
   m_AndroidMinSdkVersion: 26
-  m_AndroidTargetSdkVersion: 0
+  m_AndroidTargetSdkVersion: 35
   m_AndroidPreferredInstallLocation: 1
   m_AndroidTargetArchitectures: 4
   m_AndroidSplashScreenScale: 0

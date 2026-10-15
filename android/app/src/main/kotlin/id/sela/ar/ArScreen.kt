@@ -27,10 +27,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Navigation
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -49,6 +48,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
+import id.sela.designsystem.GlassPill
+import id.sela.designsystem.PastelCard
+import id.sela.designsystem.PastelEmptyState
+import id.sela.designsystem.SelaPastel
+import id.sela.designsystem.SelaPastelShadows
+import id.sela.designsystem.pastelShadow
 import id.sela.model.EtaPredictor
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
@@ -186,27 +191,35 @@ fun ArScreen(
         if (hasCamera) {
             AndroidView(factory = { previewView }, modifier = Modifier.fillMaxSize())
         } else {
-            Column(
-                modifier = Modifier.fillMaxSize().padding(24.dp),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Text("Izin kamera dibutuhkan untuk mode AR.", style = MaterialTheme.typography.bodyLarge)
-            }
+            PastelEmptyState(
+                "Izin kamera dibutuhkan untuk mode AR.",
+                bodyColor = SelaPastel.lavender,
+            )
         }
 
         // Panah arah di tengah layar.
         if (bearing != null) {
             val relative = ArViewModel.relativeAngle(bearing, azimuth).toFloat()
-            Icon(
-                imageVector = Icons.Filled.Navigation,
-                contentDescription = "Arah ke ${target?.name}",
+            Surface(
+                shape = androidx.compose.foundation.shape.CircleShape,
+                color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.9f),
                 modifier = Modifier
                     .align(Alignment.Center)
-                    .size(96.dp)
-                    .graphicsLayer { rotationZ = relative },
-                tint = MaterialTheme.colorScheme.primary,
-            )
+                    .pastelShadow(
+                        elevation = SelaPastelShadows.card,
+                        shape = androidx.compose.foundation.shape.CircleShape,
+                    ),
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Navigation,
+                    contentDescription = "Arah ke ${target?.name}",
+                    modifier = Modifier
+                        .size(96.dp)
+                        .padding(20.dp)
+                        .graphicsLayer { rotationZ = relative },
+                    tint = SelaPastel.blueDeep,
+                )
+            }
         }
 
         // Kartu info halte di bawah.
@@ -215,31 +228,31 @@ fun ArScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                AssistChip(
+                GlassPill(
+                    text = if (mode == "navigasi") "Navigasi halte" else "Halte terdekat",
                     onClick = {},
-                    label = { Text(if (mode == "navigasi") "Navigasi halte" else "Halte terdekat") },
+                    selected = true,
                 )
                 if (target == null) {
-                    AssistChip(onClick = {}, label = { Text("Menunggu lokasi…") })
+                    GlassPill(text = "Menunggu lokasi…", onClick = {})
                 }
             }
             if (target != null) {
-                Card(modifier = Modifier.fillMaxWidth()) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(target.name, style = MaterialTheme.typography.titleMedium)
-                        val info = buildString {
-                            if (distanceM != null) append("• ${distanceM.toInt()} m ")
-                            if (target.routeIds.isNotEmpty()) {
-                                append("• koridor ${target.routeIds.take(4).joinToString(", ")}")
-                            }
-                            if (etaMin != null) append(" • bus ±${etaMin.toInt()} mnt")
-                        }.trimStart('•', ' ')
-                        Text(info, style = MaterialTheme.typography.bodyMedium)
-                        Text(
-                            "Panah mengikuti kompas HP — goyangkan HP membentuk angka 8 bila arah ngaco.",
-                            style = MaterialTheme.typography.bodySmall,
-                        )
-                    }
+                PastelCard {
+                    Text(target.name, style = MaterialTheme.typography.titleMedium, color = SelaPastel.ink)
+                    val info = buildString {
+                        if (distanceM != null) append("• ${distanceM.toInt()} m ")
+                        if (target.routeIds.isNotEmpty()) {
+                            append("• koridor ${target.routeIds.take(4).joinToString(", ")}")
+                        }
+                        if (etaMin != null) append(" • bus ±${etaMin.toInt()} mnt")
+                    }.trimStart('•', ' ')
+                    Text(info, style = MaterialTheme.typography.bodyMedium, color = SelaPastel.inkSoft)
+                    Text(
+                        "Panah mengikuti kompas HP — goyangkan HP membentuk angka 8 bila arah ngaco.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = SelaPastel.inkFaint,
+                    )
                 }
             }
         }

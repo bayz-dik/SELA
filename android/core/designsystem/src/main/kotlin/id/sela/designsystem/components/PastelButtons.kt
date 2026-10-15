@@ -38,3 +38,27 @@ fun PastelTextButton(
         )
     }
 }
+
+/**
+ * Sakelar pastel — trek mint saat aktif, garis rambut saat mati.
+ */
+@Composable
+fun PastelSwitch(
+    checked: Boolean,
+    onToggle: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    androidx.compose.material3.Switch(
+        checked = checked,
+        onCheckedChange = { onToggle() },
+        modifier = modifier,
+        colors = androidx.compose.material3.SwitchDefaults.colors(
+            checkedThumbColor = Color.White,
+            checkedTrackColor = SelaPastel.mintDeep,
+            checkedBorderColor = Color.Transparent,
+            uncheckedThumbColor = Color.White,
+            uncheckedTrackColor = SelaPastel.hairline,
+            uncheckedBorderColor = SelaPastel.hairline,
+        ),
+    )
+}

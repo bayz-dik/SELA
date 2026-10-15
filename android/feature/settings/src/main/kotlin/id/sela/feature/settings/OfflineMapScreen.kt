@@ -1,5 +1,6 @@
 package id.sela.feature.settings
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -94,7 +95,6 @@ private fun formatPercent(progress: DownloadProgress): String =
  * (bisa ratusan MB, zoom 10–16); setelah selesai peta tetap terbuka
  * tanpa internet.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OfflineMapScreen(
     viewModel: OfflineMapViewModel = hiltViewModel(),
@@ -104,78 +104,85 @@ fun OfflineMapScreen(
     val progress = state.progress
     val downloading = progress != null && !progress.isComplete
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Peta offline") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Kembali")
-                    }
-                },
-            )
-        },
-    ) { padding ->
+    Column(
+        Modifier
+            .fillMaxSize()
+            .background(SelaPastel.background)
+            .statusBarsPadding(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
         Column(
-            Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
+            Modifier.widthIn(max = 560.dp).fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+            PastelTopBar("Peta offline", onBack, Modifier.padding(horizontal = 16.dp, vertical = 12.dp))
+
             Column(
-                Modifier.widthIn(max = 560.dp).fillMaxWidth(),
+                Modifier
+                    .weight(1f, fill = false)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 state.message?.let { msg ->
-                    SelaNoticeBanner(
+                    PastelNoticeBanner(
                         text = msg,
                         icon = Icons.Default.Info,
-                        tone = SelaNoticeTone.NEUTRAL,
+                        tone = PastelNoticeTone.NEUTRAL,
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }
 
-                SelaCard {
-                    SelaSectionTitle("Jakarta")
+                PastelCard(tint = SelaPastel.mintSoft, shadowTint = SelaPastel.mintDeep) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        SelaMascot(
+                            expression = SelaMascotExpression.Happy,
+                            diameter = 64.dp,
+                            bodyColor = SelaPastel.mint,
+                        )
+                        PastelSectionTitle("Jakarta")
+                    }
                     Text(
                         "Unduh tile peta Jakarta (zoom 10–16) ke perangkat. " +
                             "Butuh internet saat mengunduh; setelah itu peta tetap terbuka tanpa internet.",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = SelaPastel.inkSoft,
                     )
                     if (downloading) {
                         val p = state.progress!!
                         LinearProgressIndicator(
                             progress = { if (p.total > 0) p.completed / p.total.toFloat() else 0f },
                             modifier = Modifier.fillMaxWidth(),
-                            color = SelaPalette.volt,
-                            trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                            color = SelaPastel.mintDeep,
+                            trackColor = SelaPastel.mintSoft,
                         )
                         Text(
                             "Mengunduh… ${formatPercent(p)} (${p.completed}/${p.total} sumber daya)",
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = SelaPastel.inkSoft,
                         )
                     } else {
-                        SelaPrimaryButton(
+                        SelaButton(
                             text = if (state.regions.any { it.name == OfflineMapManager.JAKARTA_REGION_NAME })
                                 "Sudah tersimpan" else "Unduh peta Jakarta",
                             onClick = viewModel::download,
+                            style = SelaButtonStyle.Primary,
                             enabled = !state.busy && state.regions.none { it.name == OfflineMapManager.JAKARTA_REGION_NAME },
+                            icon = Icons.Default.Download,
                             modifier = Modifier.fillMaxWidth(),
                         )
                     }
                 }
 
-                SelaCard {
-                    SelaSectionTitle("Tersimpan di perangkat")
+                PastelCard {
+                    PastelSectionTitle("Tersimpan di perangkat")
                     if (state.regions.isEmpty()) {
-                        Text(
+                        PastelEmptyState(
                             "Belum ada peta offline. Unduh peta Jakarta di atas.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            mascotSize = 80.dp,
                         )
                     } else {
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -193,22 +200,23 @@ fun OfflineMapScreen(
                                         Icon(
                                             Icons.Default.Map,
                                             contentDescription = null,
-                                            tint = SelaPalette.volt,
+                                            tint = SelaPastel.mintDeep,
                                             modifier = Modifier.size(24.dp),
                                         )
                                         Text(
                                             region.name.replaceFirstChar { it.uppercase() },
                                             style = MaterialTheme.typography.bodyMedium,
+                                            color = SelaPastel.ink,
                                             modifier = Modifier.semantics { heading() },
                                         )
                                     }
-                                    SelaGhostButton(
+                                    PastelTextButton(
                                         text = "Hapus",
                                         onClick = { viewModel.delete(region.id) },
                                         destructive = true,
                                     )
                                 }
-                                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                                HorizontalDivider(color = SelaPastel.hairline)
                             }
                         }
                     }

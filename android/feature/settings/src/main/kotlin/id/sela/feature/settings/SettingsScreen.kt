@@ -297,23 +297,6 @@ private fun formatBytes(bytes: Long): String = when {
 // Layar Pengaturan — gaya Pagi Cerah (pastel)
 // ---------------------------------------------------------------------------
 
-/** Sakelar pastel — trek mint saat aktif. */
-@Composable
-private fun PastelSwitch(checked: Boolean, onToggle: () -> Unit) {
-    Switch(
-        checked = checked,
-        onCheckedChange = { onToggle() },
-        colors = SwitchDefaults.colors(
-            checkedThumbColor = Color.White,
-            checkedTrackColor = SelaPastel.mintDeep,
-            checkedBorderColor = Color.Transparent,
-            uncheckedThumbColor = Color.White,
-            uncheckedTrackColor = SelaPastel.hairline,
-            uncheckedBorderColor = SelaPastel.hairline,
-        ),
-    )
-}
-
 /** Baris judul + deskripsi + sakelar pastel. */
 @Composable
 private fun ToggleRow(title: String, desc: String, checked: Boolean, onToggle: () -> Unit) {

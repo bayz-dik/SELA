@@ -17,8 +17,8 @@ import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import id.sela.designsystem.SelaPalette
-import id.sela.designsystem.color
+import id.sela.designsystem.SelaPastel
+import id.sela.designsystem.pastelColor
 import androidx.compose.ui.graphics.toArgb
 import id.sela.model.*
 import id.sela.feature.search.filterStops
@@ -173,7 +173,7 @@ fun MapCanvas(state: MapUiState, styleUrl: String, modifier: Modifier = Modifier
     val vehicleMarkers = remember { mutableMapOf<String, Marker>() }
     val routeLines = remember { mutableListOf<Polyline>() }
     val routes = remember(state.data.routes) { state.data.routes.associateBy { it.id } }
-    val routeColor = routes[state.selectedId]?.displayServiceType?.color()?.toArgb() ?: SelaPalette.volt.toArgb()
+    val routeColor = routes[state.selectedId]?.displayServiceType?.pastelColor()?.toArgb() ?: SelaPastel.mint.toArgb()
     val initialCamera = remember { state.camera }
     DisposableEffect(mapView, lifecycle) {
         // Efek baru = mapView baru/hidup lagi (pengganti `var destroyed` lokal).
@@ -312,7 +312,7 @@ fun MapCanvas(state: MapUiState, styleUrl: String, modifier: Modifier = Modifier
         removeMissingMarkers(nativeMap, stopMarkers, visibleStops.mapTo(mutableSetOf()) { it.id }, markerIds)
         visibleStops.forEach { stop ->
             val type = state.filter ?: stop.routeIds.mapNotNull { routes[it]?.displayServiceType }.minByOrNull { it.ordinal }
-            val color = type?.color()?.toArgb() ?: SelaPalette.mutedSlate.toArgb()
+            val color = type?.pastelColor()?.toArgb() ?: SelaPastel.inkFaint.toArgb()
             val icon = icons.getOrPut("stop-$color") { transitIcon(context, color, bus = false) }
             val marker = updateTransitMarker(nativeMap, stopMarkers, stop.id, LatLng(stop.lat, stop.lon), "Halte ${stop.name}", null, icon)
             markerIds[marker.id] = "stop" to stop.id
@@ -327,7 +327,7 @@ fun MapCanvas(state: MapUiState, styleUrl: String, modifier: Modifier = Modifier
         }
         removeMissingMarkers(nativeMap, vehicleMarkers, vehicles.mapTo(mutableSetOf()) { it.id }, markerIds)
         vehicles.forEach { vehicle ->
-            val color = routes[vehicle.routeId]?.displayServiceType?.color()?.toArgb() ?: SelaPalette.mutedSlate.toArgb()
+            val color = routes[vehicle.routeId]?.displayServiceType?.pastelColor()?.toArgb() ?: SelaPastel.inkFaint.toArgb()
             val icon = icons.getOrPut("bus-$color") { transitIcon(context, color, bus = true) }
             // Reported coordinates only: no interpolation or implied live movement.
             val marker = updateTransitMarker(nativeMap, vehicleMarkers, vehicle.id, LatLng(vehicle.lat, vehicle.lon),
@@ -343,7 +343,7 @@ fun MapCanvas(state: MapUiState, styleUrl: String, modifier: Modifier = Modifier
         val points = state.shape.filter { it.lat in -90.0..90.0 && it.lon in -180.0..180.0 }.map { LatLng(it.lat, it.lon) }
         if (points.size > 1) {
             // Casing gelap membuat warna layanan tetap terbaca di atas peta malam.
-            routeLines += nativeMap.addPolyline(PolylineOptions().addAll(points).color(0xFF0A0D14.toInt()).width(10f))
+            routeLines += nativeMap.addPolyline(PolylineOptions().addAll(points).color(SelaPastel.ink.toArgb()).width(10f))
             routeLines += nativeMap.addPolyline(PolylineOptions().addAll(points).color(routeColor).width(5.5f))
         }
     }
@@ -476,7 +476,7 @@ private fun transitIcon(context: Context, color: Int, bus: Boolean): Icon {
     val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
     val canvas = Canvas(bitmap)
     canvas.scale(size / 48f, size / 48f)
-    val dark = 0xFF0A0D14.toInt()
+    val dark = SelaPastel.ink.toArgb()
     val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         this.color = android.graphics.Color.WHITE
         setShadowLayer(2.5f, 0f, 1.5f, 0x66000000)

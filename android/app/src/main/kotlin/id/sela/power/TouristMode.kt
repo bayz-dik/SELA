@@ -10,8 +10,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import id.sela.designsystem.SelaCard
-import id.sela.designsystem.SelaSectionTitle
+import id.sela.designsystem.PastelCard
+import id.sela.designsystem.PastelSectionTitle
+import id.sela.designsystem.SelaPastel
 
 /**
  * Satu titik wisata terkurasi untuk mode turis.
@@ -67,8 +68,8 @@ object TouristSpots {
 /** Kartu "Info wisata" berisi daftar [TouristSpots.SPOTS]. */
 @Composable
 fun TouristCard(modifier: Modifier = Modifier) {
-    SelaCard(modifier = modifier) {
-        SelaSectionTitle("Info wisata")
+    PastelCard(tint = SelaPastel.peachSoft, shadowTint = SelaPastel.peachDeep, modifier = modifier) {
+        PastelSectionTitle("Info wisata")
         Column(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -78,20 +79,23 @@ fun TouristCard(modifier: Modifier = Modifier) {
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
-                    Text(spot.name, style = MaterialTheme.typography.titleSmall)
+                    Text(spot.name, style = MaterialTheme.typography.titleSmall, color = SelaPastel.ink)
                     Text(
                         spot.desc,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = SelaPastel.inkSoft,
                     )
                     Text(
                         "Halte terdekat: ${spot.nearbyStopHint}",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary,
+                        color = SelaPastel.peachDeep,
                     )
                 }
                 if (index < TouristSpots.SPOTS.lastIndex) {
-                    HorizontalDivider(modifier = Modifier.padding(top = 4.dp))
+                    HorizontalDivider(
+                        modifier = Modifier.padding(top = 4.dp),
+                        color = SelaPastel.hairline,
+                    )
                 }
             }
         }

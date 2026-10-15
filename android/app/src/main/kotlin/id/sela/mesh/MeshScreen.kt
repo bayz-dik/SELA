@@ -1,5 +1,6 @@
 package id.sela.mesh
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,10 +11,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.BluetoothSearching
+import androidx.compose.material.icons.filled.Send
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -23,9 +25,18 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import id.sela.designsystem.PastelCard
+import id.sela.designsystem.PastelEmptyState
+import id.sela.designsystem.PastelSectionTitle
+import id.sela.designsystem.SelaButton
+import id.sela.designsystem.SelaButtonStyle
+import id.sela.designsystem.SelaMascot
+import id.sela.designsystem.SelaMascotExpression
+import id.sela.designsystem.SelaPastel
 
 /**
  * Layar berbagi ETA ke HP sekitar (Nearby Connections).
@@ -76,77 +87,111 @@ fun MeshScreen(
     }
 
     Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(SelaPastel.background)
+            .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Text("Berbagi ETA Sekitar", style = MaterialTheme.typography.headlineSmall)
-        Text(
-            "Cari HP teman di dekatmu, lalu kirim info halte favoritmu. " +
-                "Butuh Bluetooth + lokasi aktif. Hanya 1-hop, tidak diteruskan ke HP lain.",
-            style = MaterialTheme.typography.bodyMedium,
-        )
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(onClick = { searching = true }, enabled = !searching) {
-                Text("Cari HP sekitar")
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            SelaMascot(
+                expression = SelaMascotExpression.Happy,
+                diameter = 56.dp,
+                bodyColor = SelaPastel.peach,
+            )
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text("Berbagi ETA Sekitar", style = MaterialTheme.typography.headlineSmall, color = SelaPastel.ink)
+                Text(
+                    "Cari HP teman di dekatmu, lalu kirim info halte favoritmu. " +
+                        "Butuh Bluetooth + lokasi aktif. Hanya 1-hop, tidak diteruskan ke HP lain.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = SelaPastel.inkSoft,
+                )
             }
-            OutlinedButton(
+        }
+
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            SelaButton(
+                text = "Cari HP sekitar",
+                onClick = { searching = true },
+                style = SelaButtonStyle.Primary,
+                enabled = !searching,
+                icon = Icons.Default.BluetoothSearching,
+            )
+            SelaButton(
+                text = "Berhenti",
                 onClick = {
                     searching = false
                     mesh.stop()
                     peers = emptyList()
                     status = "Berhenti."
                 },
+                style = SelaButtonStyle.Soft,
                 enabled = searching,
-            ) {
-                Text("Berhenti")
-            }
+            )
         }
-        Text(status, style = MaterialTheme.typography.bodySmall)
+        Text(status, style = MaterialTheme.typography.bodySmall, color = SelaPastel.inkSoft)
 
-        Text("HP ditemukan (${peers.size})", style = MaterialTheme.typography.titleMedium)
-        LazyColumn(
-            modifier = Modifier.fillMaxWidth().weight(1f, fill = false),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            items(peers) { name ->
-                Card(modifier = Modifier.fillMaxWidth()) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(12.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(name, style = MaterialTheme.typography.bodyLarge)
-                            Text(
-                                "Kirim halte favorit: ${favorites.firstOrNull() ?: "belum ada favorit"}",
-                                style = MaterialTheme.typography.bodySmall,
-                            )
-                        }
-                        Spacer(Modifier.height(4.dp))
-                        Button(
-                            onClick = {
-                                val endpointId = mesh.endpointIdFor(name) ?: return@Button
-                                val fav = favorites.firstOrNull() ?: "belum-ada-favorit"
-                                val snap = MeshSnapshot(
-                                    stopId = fav,
-                                    stopName = fav,
-                                    etaMinutes = -1, // tanpa data ETA sungguhan
-                                    timestamp = System.currentTimeMillis(),
-                                )
-                                mesh.sendSnapshot(endpointId, snap.toJson())
-                            },
+        PastelSectionTitle("HP ditemukan (${peers.size})")
+        if (peers.isEmpty()) {
+            PastelCard {
+                PastelEmptyState(
+                    if (searching) "Mencari HP di sekitar…" else "Tekan “Cari HP sekitar” untuk mulai.",
+                    mascotSize = 72.dp,
+                    bodyColor = SelaPastel.peach,
+                )
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxWidth().weight(1f, fill = false),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                items(peers) { name ->
+                    PastelCard {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Text("Kirim ETA favoritku")
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(name, style = MaterialTheme.typography.bodyLarge, color = SelaPastel.ink)
+                                Text(
+                                    "Kirim halte favorit: ${favorites.firstOrNull() ?: "belum ada favorit"}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = SelaPastel.inkSoft,
+                                )
+                            }
+                            Spacer(Modifier.height(4.dp))
+                            SelaButton(
+                                text = "Kirim ETA favoritku",
+                                onClick = {
+                                    val endpointId = mesh.endpointIdFor(name) ?: return@SelaButton
+                                    val fav = favorites.firstOrNull() ?: "belum-ada-favorit"
+                                    val snap = MeshSnapshot(
+                                        stopId = fav,
+                                        stopName = fav,
+                                        etaMinutes = -1, // tanpa data ETA sungguhan
+                                        timestamp = System.currentTimeMillis(),
+                                    )
+                                    mesh.sendSnapshot(endpointId, snap.toJson())
+                                },
+                                style = SelaButtonStyle.Soft,
+                                icon = Icons.Default.Send,
+                            )
                         }
                     }
                 }
             }
         }
 
-        Text("Diterima (${received.size})", style = MaterialTheme.typography.titleMedium)
+        PastelSectionTitle("Diterima (${received.size})")
         LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             items(received) { msg ->
-                Card(modifier = Modifier.fillMaxWidth()) {
-                    Text(msg, modifier = Modifier.padding(12.dp))
+                PastelCard(tint = SelaPastel.blueSoft, shadowTint = SelaPastel.blueDeep) {
+                    Text(msg, color = SelaPastel.ink)
                 }
             }
         }

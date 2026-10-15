@@ -3,7 +3,9 @@ package id.sela.sos
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -13,21 +15,18 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Switch
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -42,6 +41,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import id.sela.designsystem.PastelCard
+import id.sela.designsystem.PastelSwitch
+import id.sela.designsystem.PastelTextButton
+import id.sela.designsystem.SelaButton
+import id.sela.designsystem.SelaButtonStyle
+import id.sela.designsystem.SelaMascot
+import id.sela.designsystem.SelaMascotExpression
+import id.sela.designsystem.SelaPastel
+import id.sela.designsystem.SelaPastelShadows
+import id.sela.designsystem.SelaPastelShapes
+import id.sela.designsystem.pastelShadow
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -154,108 +164,173 @@ fun SosScreen(viewModel: SosViewModel = androidx.hilt.navigation.compose.hiltVie
     if (showConfirm) {
         AlertDialog(
             onDismissRequest = { showConfirm = false },
-            icon = { Icon(Icons.Filled.Warning, contentDescription = null, tint = Color.Red) },
-            title = { Text("Kirim SOS dalam $countdown detik") },
+            icon = {
+                Icon(
+                    Icons.Filled.Warning,
+                    contentDescription = null,
+                    tint = SelaPastel.dangerDeep,
+                    modifier = Modifier.size(32.dp),
+                )
+            },
+            title = { Text("Kirim SOS dalam $countdown detik", color = SelaPastel.ink) },
             text = {
                 Text(
                     "Pesan darurat + lokasi akan dibuka di WhatsApp ke $contact. " +
                         "Tekan BATAL bila tidak sengaja.",
+                    color = SelaPastel.inkSoft,
                 )
             },
             confirmButton = {
-                TextButton(onClick = {
-                    showConfirm = false
-                    sendSos()
-                }) { Text("Kirim sekarang") }
+                SelaButton(
+                    text = "Kirim sekarang",
+                    onClick = {
+                        showConfirm = false
+                        sendSos()
+                    },
+                    style = SelaButtonStyle.Soft,
+                    accent = SelaPastel.danger,
+                    onAccent = SelaPastel.dangerDeep,
+                )
             },
             dismissButton = {
-                TextButton(onClick = { showConfirm = false }) { Text("BATAL") }
+                PastelTextButton(text = "BATAL", onClick = { showConfirm = false }, destructive = true)
             },
+            shape = SelaPastelShapes.xl,
+            containerColor = Color.White,
         )
     }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(SelaPastel.background)
             .verticalScroll(rememberScrollState())
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Text("SOS Darurat", style = MaterialTheme.typography.headlineMedium)
-        Text(
-            "Kirim lokasi + pesan darurat ke kontak terdekat lewat WhatsApp. " +
-                "Bukan SMS — butuh internet & WhatsApp terpasang.",
-            style = MaterialTheme.typography.bodyMedium,
-        )
-
-        Button(
-            onClick = { showConfirm = true },
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)),
-            modifier = Modifier.size(180.dp),
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text("SOS", style = MaterialTheme.typography.displayMedium, color = Color.White)
+            SelaMascot(
+                expression = SelaMascotExpression.Happy,
+                diameter = 56.dp,
+                bodyColor = SelaPastel.danger.copy(alpha = 0.7f),
+            )
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text("SOS Darurat", style = MaterialTheme.typography.headlineMedium, color = SelaPastel.ink)
+                Text(
+                    "Kirim lokasi + pesan darurat ke kontak terdekat lewat WhatsApp. " +
+                        "Bukan SMS — butuh internet & WhatsApp terpasang.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = SelaPastel.inkSoft,
+                )
+            }
         }
 
-        Card(modifier = Modifier.fillMaxWidth()) {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Kontak darurat (WhatsApp)", style = MaterialTheme.typography.titleSmall)
-                if (editingContact) {
-                    OutlinedTextField(
-                        value = contactDraft,
-                        onValueChange = { contactDraft = it },
-                        label = { Text("Nomor HP, mis. 08123456789") },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Button(onClick = {
+        // Tombol SOS — lingkaran clay merah pastel, besar dan jelas.
+        Surface(
+            onClick = { showConfirm = true },
+            shape = CircleShape,
+            color = SelaPastel.danger,
+            contentColor = Color.White,
+            modifier = Modifier
+                .size(180.dp)
+                .pastelShadow(
+                    elevation = SelaPastelShadows.floating,
+                    shape = CircleShape,
+                    color = SelaPastel.dangerDeep,
+                ),
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Text("SOS", style = MaterialTheme.typography.displayMedium, color = Color.White)
+            }
+        }
+
+        PastelCard(tint = SelaPastel.blueSoft, shadowTint = SelaPastel.blueDeep) {
+            Text("Kontak darurat (WhatsApp)", style = MaterialTheme.typography.titleSmall, color = SelaPastel.ink)
+            if (editingContact) {
+                OutlinedTextField(
+                    value = contactDraft,
+                    onValueChange = { contactDraft = it },
+                    label = { Text("Nomor HP, mis. 08123456789") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                    shape = SelaPastelShapes.field,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = SelaPastel.blueDeep,
+                        unfocusedBorderColor = SelaPastel.hairline,
+                        focusedLabelColor = SelaPastel.blueDeep,
+                        unfocusedLabelColor = SelaPastel.inkSoft,
+                        cursorColor = SelaPastel.blueDeep,
+                        focusedContainerColor = Color.White,
+                        unfocusedContainerColor = Color.White,
+                    ),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    SelaButton(
+                        text = "Simpan",
+                        onClick = {
                             viewModel.saveContact(contactDraft)
                             editingContact = false
                             error = null
-                        }) { Text("Simpan") }
-                        OutlinedButton(onClick = { editingContact = false }) { Text("Batal") }
-                    }
-                } else {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(if (contact.isBlank()) "Belum diisi" else contact)
-                        TextButton(onClick = {
+                        },
+                        style = SelaButtonStyle.Primary,
+                    )
+                    PastelTextButton(text = "Batal", onClick = { editingContact = false })
+                }
+            } else {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        if (contact.isBlank()) "Belum diisi" else contact,
+                        color = SelaPastel.ink,
+                    )
+                    PastelTextButton(
+                        text = "Ubah",
+                        onClick = {
                             contactDraft = contact
                             editingContact = true
-                        }) { Text("Ubah") }
-                    }
+                        },
+                    )
                 }
             }
         }
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column {
-                Text("SOS goyang 3x", style = MaterialTheme.typography.titleSmall)
-                Text(
-                    "Goyang HP 3x untuk buka dialog SOS",
-                    style = MaterialTheme.typography.bodySmall,
-                )
+        PastelCard {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text("SOS goyang 3x", style = MaterialTheme.typography.titleSmall, color = SelaPastel.ink)
+                    Text(
+                        "Goyang HP 3x untuk buka dialog SOS",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = SelaPastel.inkSoft,
+                    )
+                }
+                PastelSwitch(checked = shakeEnabled, onToggle = { shakeEnabled = it })
             }
-            Switch(checked = shakeEnabled, onCheckedChange = { shakeEnabled = it })
         }
 
-        OutlinedButton(
+        SelaButton(
+            text = "Hubungi 112 (Darurat)",
             onClick = { runCatching { SosManager.call112(context) } },
+            style = SelaButtonStyle.Soft,
+            accent = SelaPastel.danger,
+            onAccent = SelaPastel.dangerDeep,
+            icon = Icons.Filled.Warning,
             modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text("Hubungi 112 (Darurat)")
-        }
+        )
 
         error?.let {
-            Text(it, color = MaterialTheme.colorScheme.error)
+            Text(it, color = SelaPastel.dangerDeep, style = MaterialTheme.typography.bodyMedium)
         }
         Spacer(modifier = Modifier.height(8.dp))
     }

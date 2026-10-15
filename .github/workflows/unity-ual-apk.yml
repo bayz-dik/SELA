@@ -75,9 +75,15 @@ jobs:
           echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
           ls $ANDROID_HOME/cmdline-tools/ || echo "cmdline-tools check done"
 
-      - name: Decode keystore
+      - name: Generate keystore
         run: |
-          echo "${{ secrets.SELA_KEYSTORE_BASE64 }}" | base64 -d > android/app/sela-release.keystore
+          keytool -genkeypair -v \
+            -keystore android/app/sela-release.keystore \
+            -alias sela \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass "${{ secrets.SELA_KEYSTORE_PASSWORD }}" \
+            -keypass "${{ secrets.SELA_KEY_PASSWORD }}" \
+            -dname "CN=SELA, OU=SELA, O=SELA, L=Jakarta, ST=Jakarta, C=ID"
           ls -la android/app/sela-release.keystore
 
       - name: Build release APK
@@ -86,7 +92,7 @@ jobs:
           chmod +x gradlew
           ./gradlew :app:assembleRelease --no-daemon \
             -Psela.keystore.password="${{ secrets.SELA_KEYSTORE_PASSWORD }}" \
-            -Psela.key.alias="${{ secrets.SELA_KEY_ALIAS }}" \
+            -Psela.key.alias="sela" \
             -Psela.key.password="${{ secrets.SELA_KEY_PASSWORD }}"
 
       - name: Upload APK artifact

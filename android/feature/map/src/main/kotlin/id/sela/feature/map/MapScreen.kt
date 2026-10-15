@@ -7,9 +7,11 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -18,6 +20,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.contentDescription
@@ -25,8 +28,11 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -43,11 +49,19 @@ private const val FOLLOW_SNAP_METERS = 30.0
 /** B21: follow mode 2D — lepas snap bus bila jarak user↔bus melebihi ini. */
 private const val FOLLOW_RELEASE_METERS = 60.0
 
+/** Wordmark "SELA" versi pastel — kapital rapat, tinta gelap. */
+private val PastelWordmark = TextStyle(
+    fontWeight = FontWeight.ExtraBold,
+    fontSize = 20.sp,
+    lineHeight = 24.sp,
+    letterSpacing = 2.sp,
+)
+
 // ---------------------------------------------------------------------------
 // Bilah atas
 // ---------------------------------------------------------------------------
 
-/** Pil status koneksi — ringkas, melayang, berdenyut saat live. */
+/** Pil status koneksi — kaca melayang, titik denyut pastel saat live. */
 @Composable
 fun ConnectionPill(status: ConnectionStatus, hasVehicles: Boolean) {
     val (active, text) = when (status) {
@@ -59,31 +73,38 @@ fun ConnectionPill(status: ConnectionStatus, hasVehicles: Boolean) {
         ConnectionStatus.ERROR -> false to "Akses ditolak"
     }
     Surface(
-        shape = SelaTokens.pill,
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        shadowElevation = SelaTokens.floatElevation,
-        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+        shape = SelaPastelShapes.pill,
+        color = Color.White.copy(alpha = 0.88f),
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.75f)),
+        modifier = Modifier
+            .pastelShadow(elevation = SelaPastelShadows.soft, shape = SelaPastelShapes.pill)
+            .semantics { liveRegion = LiveRegionMode.Polite },
     ) {
         Row(
             Modifier.padding(horizontal = 14.dp, vertical = 9.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            SelaPulseDot(active = active)
-            Text(text, style = MaterialTheme.typography.labelMedium)
+            PastelPulseDot(
+                active = active,
+                color = if (status == ConnectionStatus.ERROR) SelaPastel.danger else SelaPastel.mintDeep,
+            )
+            Text(text, style = MaterialTheme.typography.labelMedium, color = SelaPastel.ink)
         }
     }
 }
 
-/** Legenda warna layanan — pil melayang di atas dock. */
+/** Legenda warna layanan — pil kaca melayang di atas dock. */
 @Composable
 fun ServiceLegend() {
     Surface(
-        shape = SelaTokens.pill,
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        shadowElevation = SelaTokens.floatElevation,
+        shape = SelaPastelShapes.pill,
+        color = Color.White.copy(alpha = 0.88f),
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.75f)),
+        modifier = Modifier.pastelShadow(
+            elevation = SelaPastelShadows.soft,
+            shape = SelaPastelShapes.pill,
+        ),
     ) {
         Row(
             Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
@@ -92,10 +113,48 @@ fun ServiceLegend() {
         ) {
             ServiceType.entries.forEach {
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Surface(shape = CircleShape, color = it.color(), modifier = Modifier.size(8.dp)) {}
-                    Text(it.label(), style = MaterialTheme.typography.labelMedium)
+                    Surface(shape = CircleShape, color = it.pastelColor(), modifier = Modifier.size(10.dp)) {}
+                    Text(it.label(), style = MaterialTheme.typography.labelMedium, color = SelaPastel.inkSoft)
                 }
             }
+        }
+    }
+}
+
+/** Chip filter kaca — versi GlassPill dengan titik warna layanan. */
+@Composable
+private fun FilterGlassPill(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    dotColor: Color? = null,
+) {
+    Surface(
+        onClick = onClick,
+        modifier = modifier.pastelShadow(
+            elevation = SelaPastelShadows.soft,
+            shape = SelaPastelShapes.pill,
+        ),
+        shape = SelaPastelShapes.pill,
+        color = if (selected) Color.White.copy(alpha = 0.94f) else Color.White.copy(alpha = 0.55f),
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.75f)),
+    ) {
+        Row(
+            Modifier.padding(horizontal = 18.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (dotColor != null) {
+                Surface(shape = CircleShape, color = dotColor, modifier = Modifier.size(8.dp)) {}
+            }
+            Text(
+                text,
+                style = MaterialTheme.typography.labelLarge,
+                color = if (selected) SelaPastel.ink else SelaPastel.inkSoft,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
     }
 }
@@ -111,15 +170,15 @@ private fun DockButton(icon: androidx.compose.ui.graphics.vector.ImageVector, la
         verticalArrangement = Arrangement.spacedBy(4.dp),
         modifier = Modifier
             .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 8.dp)
+            .padding(horizontal = 14.dp, vertical = 10.dp)
             .semantics { contentDescription = label },
     ) {
-        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(24.dp))
-        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Icon(icon, contentDescription = null, tint = SelaPastel.ink, modifier = Modifier.size(24.dp))
+        Text(label, style = MaterialTheme.typography.labelSmall, color = SelaPastel.inkSoft)
     }
 }
 
-/** Dock kaca: Rute · Halte · Favorit · Bus + tombol volt Lokasi saya. */
+/** Dock kaca: Rute · Halte · Favorit · Bus + tombol lingkaran Lokasi saya. */
 @Composable
 private fun MapDock(
     onLocate: () -> Unit,
@@ -127,6 +186,7 @@ private fun MapDock(
     onStops: () -> Unit,
     onFavorites: () -> Unit,
     onVehicles: () -> Unit,
+    followActive: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     Row(
@@ -134,32 +194,21 @@ private fun MapDock(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.Bottom,
     ) {
-        Surface(
-            shape = SelaTokens.pill,
-            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-            shadowElevation = SelaTokens.floatElevation,
-            modifier = Modifier.weight(1f),
-        ) {
-            Row(
-                Modifier.padding(horizontal = 6.dp, vertical = 4.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                DockButton(Icons.Default.Route, "Rute", onRoutes)
-                DockButton(Icons.Default.LocationOn, "Halte", onStops)
-                DockButton(Icons.Default.Favorite, "Favorit", onFavorites)
-                DockButton(Icons.Default.DirectionsBus, "Bus", onVehicles)
-            }
+        GlassPillNavBar(modifier = Modifier.weight(1f)) {
+            DockButton(Icons.Default.Route, "Rute", onRoutes)
+            DockButton(Icons.Default.LocationOn, "Halte", onStops)
+            DockButton(Icons.Default.Favorite, "Favorit", onFavorites)
+            DockButton(Icons.Default.DirectionsBus, "Bus", onVehicles)
         }
         Surface(
             onClick = onLocate,
             shape = CircleShape,
-            color = SelaPalette.volt,
-            contentColor = SelaPalette.onVolt,
-            shadowElevation = SelaTokens.floatElevation,
+            color = if (followActive) SelaPastel.mint.copy(alpha = 0.95f) else Color.White.copy(alpha = 0.9f),
+            contentColor = if (followActive) SelaPastel.mintDeep else SelaPastel.blueDeep,
+            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.75f)),
             modifier = Modifier
                 .size(64.dp)
+                .pastelShadow(elevation = SelaPastelShadows.card, shape = CircleShape)
                 .semantics { contentDescription = "Lokasi saya" },
         ) {
             Box(contentAlignment = Alignment.Center) {
@@ -175,23 +224,26 @@ private fun MapDock(
 
 @Composable
 fun ColumnScope.RouteSelectorSheet(routes: List<Route>, onSelect: (String) -> Unit) {
-    SelaSheetHeader(title = "Pilih rute", subtitle = "${routes.size} rute tersedia")
+    PastelSheetHeader(title = "Pilih rute", subtitle = "${routes.size} rute tersedia")
     LazyColumn(
         Modifier
             .fillMaxWidth()
             .weight(1f, fill = false),
         contentPadding = PaddingValues(bottom = 8.dp),
     ) {
-        if (routes.isEmpty()) item { SelaEmptyState("Rute tidak ditemukan.") }
+        if (routes.isEmpty()) item { PastelEmptyState("Rute tidak ditemukan.") }
         items(routes, key = { it.id }) { route ->
-            SelaListRow(
+            val tint = route.displayServiceType.pastelColor()
+            val deep = route.displayServiceType.pastelDeepColor()
+            PastelListRow(
                 title = route.longName.ifBlank { "Rute ${route.shortName}" },
                 subtitle = "Rute ${route.shortName} · ${route.displayServiceType.label()}",
                 leadingIcon = Icons.Default.Route,
-                leadingTint = route.displayServiceType.color(),
+                leadingTint = tint,
+                leadingDeep = deep,
                 onClick = { onSelect(route.id) },
                 modifier = Modifier.padding(horizontal = 12.dp),
-                trailing = { SelaRouteBadge(route.shortName, route.displayServiceType.color()) },
+                trailing = { PastelRouteBadge(route.shortName, tint = tint, deep = deep) },
             )
         }
     }
@@ -200,7 +252,7 @@ fun ColumnScope.RouteSelectorSheet(routes: List<Route>, onSelect: (String) -> Un
 @Composable
 private fun ColumnScope.VehicleListSheet(state: MapUiState, onSelect: (String) -> Unit) {
     val live = state.vehicles.filter { !it.isStale }
-    SelaSheetHeader(
+    PastelSheetHeader(
         title = "Bus terpantau",
         subtitle = if (live.isEmpty()) "Belum ada posisi terkini" else "${live.size} bus live",
     )
@@ -210,17 +262,19 @@ private fun ColumnScope.VehicleListSheet(state: MapUiState, onSelect: (String) -
             .weight(1f, fill = false),
         contentPadding = PaddingValues(bottom = 8.dp),
     ) {
-        if (live.isEmpty()) item { SelaEmptyState("Belum ada posisi bus terkini. Halte dan rute tetap tersedia.") }
+        if (live.isEmpty()) item { PastelEmptyState("Belum ada posisi bus terkini. Halte dan rute tetap tersedia.") }
         items(live, key = { it.id }) { bus ->
             val route = state.routes.find { r -> r.id == bus.routeId }
-            SelaListRow(
+            val type = route?.displayServiceType
+            PastelListRow(
                 title = "Bus ${bus.id}",
                 subtitle = route?.let { "${it.shortName} · ${it.longName}" } ?: "Rute ${bus.routeId}",
                 leadingIcon = Icons.Default.DirectionsBus,
-                leadingTint = route?.displayServiceType?.color() ?: MaterialTheme.colorScheme.primary,
+                leadingTint = type?.pastelColor() ?: SelaPastel.blue,
+                leadingDeep = type?.pastelDeepColor() ?: SelaPastel.blueDeep,
                 onClick = { onSelect(bus.id) },
                 modifier = Modifier.padding(horizontal = 12.dp),
-                trailing = { SelaPulseDot(active = true) },
+                trailing = { PastelPulseDot(active = true) },
             )
         }
     }
@@ -232,7 +286,7 @@ private fun ColumnScope.StopListSheet(
     nearby: GeoPoint?,
     onSelect: (String) -> Unit,
 ) {
-    SelaSheetHeader(
+    PastelSheetHeader(
         title = if (nearby == null) "Halte" else "Halte terdekat",
         subtitle = "${stops.size} halte",
     )
@@ -242,15 +296,17 @@ private fun ColumnScope.StopListSheet(
             .weight(1f, fill = false),
         contentPadding = PaddingValues(bottom = 8.dp),
     ) {
-        if (stops.isEmpty()) item { SelaEmptyState("Belum ada data halte.") }
+        if (stops.isEmpty()) item { PastelEmptyState("Belum ada data halte.") }
         val ordered = nearby?.let { p ->
             stops.sortedBy { (it.lat - p.lat) * (it.lat - p.lat) + (it.lon - p.lon) * (it.lon - p.lon) }
         } ?: stops
         items(ordered, key = { it.id }) { stop ->
-            SelaListRow(
+            PastelListRow(
                 title = stop.name,
                 subtitle = if (stop.routeIds.isNotEmpty()) "${stop.routeIds.size} rute" else "Halte",
                 leadingIcon = Icons.Default.DirectionsBus,
+                leadingTint = SelaPastel.mint,
+                leadingDeep = SelaPastel.mintDeep,
                 onClick = { onSelect(stop.id) },
                 modifier = Modifier.padding(horizontal = 12.dp),
             )
@@ -262,11 +318,17 @@ private fun ColumnScope.StopListSheet(
 fun PermissionRationale(onAllow: () -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Gunakan lokasi?") },
-        text = { Text("Lokasi hanya dipakai saat mencari posisi Anda. Tanpa izin, peta dan pencarian tetap bisa dipakai.") },
-        confirmButton = { TextButton(onAllow) { Text("Lanjut") } },
-        dismissButton = { TextButton(onDismiss) { Text("Tidak sekarang") } },
-        shape = SelaTokens.card,
+        title = { Text("Gunakan lokasi?", color = SelaPastel.ink) },
+        text = {
+            Text(
+                "Lokasi hanya dipakai saat mencari posisi Anda. Tanpa izin, peta dan pencarian tetap bisa dipakai.",
+                color = SelaPastel.inkSoft,
+            )
+        },
+        confirmButton = { SelaButton(text = "Lanjut", onClick = onAllow) },
+        dismissButton = { PastelTextButton(text = "Tidak sekarang", onClick = onDismiss) },
+        shape = SelaPastelShapes.xl,
+        containerColor = Color.White,
     )
 }
 
@@ -536,36 +598,45 @@ fun MapScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("SELA", style = SelaWordmark, color = SelaPalette.volt)
+                Text("SELA", style = PastelWordmark, color = SelaPastel.ink)
                 ConnectionPill(state.connectionStatus, state.vehicles.any { !it.isStale })
             }
-            SelaSearchBar(
+            PastelSearchBar(
                 value = state.query,
                 onChange = viewModel::query,
                 onFocus = { searchFocused = it },
             )
             AnimatedVisibility(!searchFocused && state.query.isBlank()) {
-                SelaSegmentedControl(
-                    listOf(
-                        SelaSegmentOption("Semua", state.filter == null, { viewModel.filter(null) }),
-                        *ServiceType.entries.map { type ->
-                            SelaSegmentOption(
-                                type.label(),
-                                state.filter == type,
-                                { viewModel.filter(type) },
-                                dotColor = type.color(),
-                            )
-                        }.toTypedArray(),
-                    ),
-                    modifier = Modifier.fillMaxWidth(),
-                )
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    FilterGlassPill(
+                        text = "Semua",
+                        selected = state.filter == null,
+                        onClick = { viewModel.filter(null) },
+                    )
+                    ServiceType.entries.forEach { type ->
+                        FilterGlassPill(
+                            text = type.label(),
+                            selected = state.filter == type,
+                            onClick = { viewModel.filter(type) },
+                            dotColor = type.pastelColor(),
+                        )
+                    }
+                }
             }
             AnimatedVisibility(searchFocused || state.query.isNotBlank()) {
                 Surface(
-                    shape = SelaTokens.card,
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.97f),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                    shadowElevation = SelaTokens.floatElevation,
+                    shape = SelaPastelShapes.lg,
+                    color = Color.White.copy(alpha = 0.97f),
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.8f)),
+                    modifier = Modifier.pastelShadow(
+                        elevation = SelaPastelShadows.card,
+                        shape = SelaPastelShapes.lg,
+                    ),
                 ) {
                     LazyColumn(
                         Modifier.fillMaxWidth().heightIn(max = 340.dp),
@@ -576,10 +647,11 @@ fun MapScreen(
                                 if (state.query.isBlank()) "Pilih halte atau rute" else "Hasil pencarian",
                                 Modifier.padding(horizontal = 20.dp, vertical = 8.dp).semantics { heading() },
                                 style = MaterialTheme.typography.titleSmall,
+                                color = SelaPastel.ink,
                             )
                         }
                         if (foundStops.isEmpty() && foundRoutes.isEmpty()) {
-                            item { SelaEmptyState("Tidak ditemukan. Coba nama lain atau pilih filter Semua.") }
+                            item { PastelEmptyState("Tidak ditemukan. Coba nama lain atau pilih filter Semua.") }
                         }
                         // Fitur #85: easter egg — ketik "gacor" di pencarian
                         if (state.query.trim().lowercase() == "gacor") {
@@ -587,10 +659,10 @@ fun MapScreen(
                                 val gacorShown = remember { mutableStateOf(false) }
                                 if (!gacorShown.value) {
                                     gacorShown.value = true
-                                    SelaNoticeBanner(
+                                    PastelNoticeBanner(
                                         text = "Mode Gacor aktif 😄 — semua ETA dibulatkan ke bawah biar berasa cepat.",
                                         icon = Icons.Default.Celebration,
-                                        tone = SelaNoticeTone.LIVE,
+                                        tone = PastelNoticeTone.LIVE,
                                         modifier = Modifier.padding(horizontal = 8.dp),
                                     )
                                 }
@@ -599,21 +671,26 @@ fun MapScreen(
                         val routes = if (state.query.isBlank()) foundRoutes.take(3) else foundRoutes
                         val stops = if (state.query.isBlank()) foundStops.take(5) else foundStops
                         items(routes, key = { "r:${it.id}" }) { r ->
-                            SelaListRow(
+                            val tint = r.displayServiceType.pastelColor()
+                            val deep = r.displayServiceType.pastelDeepColor()
+                            PastelListRow(
                                 title = r.longName.ifBlank { "Rute ${r.shortName}" },
                                 subtitle = "Rute ${r.shortName} · ${r.displayServiceType.label()}",
                                 leadingIcon = Icons.Default.Route,
-                                leadingTint = r.displayServiceType.color(),
+                                leadingTint = tint,
+                                leadingDeep = deep,
                                 onClick = { chooseSearch("route", r.id) },
                                 modifier = Modifier.padding(horizontal = 8.dp),
-                                trailing = { SelaRouteBadge(r.shortName, r.displayServiceType.color()) },
+                                trailing = { PastelRouteBadge(r.shortName, tint = tint, deep = deep) },
                             )
                         }
                         items(stops, key = { "s:${it.id}" }) { s ->
-                            SelaListRow(
+                            PastelListRow(
                                 title = s.name,
                                 subtitle = "Halte",
                                 leadingIcon = Icons.Default.DirectionsBus,
+                                leadingTint = SelaPastel.mint,
+                                leadingDeep = SelaPastel.mintDeep,
                                 onClick = { chooseSearch("stop", s.id) },
                                 modifier = Modifier.padding(horizontal = 8.dp),
                             )
@@ -622,7 +699,7 @@ fun MapScreen(
                 }
             }
             (state.message ?: state.error)?.let {
-                SelaErrorState(
+                PastelErrorState(
                     message = it,
                     onRetry = { viewModel.message(null); viewModel.refresh() },
                     // Hindari tumpuk dengan tombol aksi melayang di kanan
@@ -633,7 +710,7 @@ fun MapScreen(
 
         if (state.isLoading || locationBusy) {
             Box(Modifier.align(Alignment.Center)) {
-                SelaLoadingState()
+                PastelLoadingState()
             }
         }
 
@@ -657,6 +734,7 @@ fun MapScreen(
                     onStops = { panel = "stops" },
                     onFavorites = { panel = "favorites" },
                     onVehicles = { panel = "vehicles" },
+                    followActive = followMode,
                 )
             }
         }
@@ -668,7 +746,7 @@ fun MapScreen(
     )
 
     if (panel != null) {
-        SelaBottomSheet(onDismiss = { panel = null }) {
+        PastelBottomSheet(onDismiss = { panel = null }) {
             when (panel) {
                 "routes" -> RouteSelectorSheet(searchRoutes(state.routes, state.query, state.filter)) {
                     panel = null; viewModel.select("route", it)
@@ -681,7 +759,7 @@ fun MapScreen(
     }
 
     if (state.selectedId != null) {
-        SelaBottomSheet(onDismiss = viewModel::dismiss) {
+        PastelBottomSheet(onDismiss = viewModel::dismiss) {
             when (state.selectedKind) {
                 "stop" -> state.stops.find { it.id == state.selectedId }?.let { stop ->
                     val arrivals = remember(stop.id, state.data.vehicles) { EtaPredictor.estimate(stop, state.data.vehicles) }
@@ -697,7 +775,7 @@ fun MapScreen(
                         },
                         extras = stopExtras,
                     )
-                } ?: SelaEmptyState("Halte belum tersedia.")
+                } ?: PastelEmptyState("Halte belum tersedia.")
                 "route" -> state.routes.find { it.id == state.selectedId }?.let { route ->
                     RouteDetailSheet(
                         route,
@@ -707,10 +785,10 @@ fun MapScreen(
                         { viewModel.favorite(route.id, "route") },
                         viewModel::dismiss,
                     )
-                } ?: SelaEmptyState("Rute belum tersedia.")
+                } ?: PastelEmptyState("Rute belum tersedia.")
                 "vehicle" -> state.vehicles.find { it.id == state.selectedId }?.let { vehicle ->
                     VehicleDetailSheet(vehicle, state.routes.find { it.id == vehicle.routeId }) { viewModel.select("route", it) }
-                } ?: SelaEmptyState("Posisi bus sudah tidak tersedia.")
+                } ?: PastelEmptyState("Posisi bus sudah tidak tersedia.")
             }
         }
     }

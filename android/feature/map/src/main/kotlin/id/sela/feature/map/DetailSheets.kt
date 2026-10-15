@@ -1,10 +1,8 @@
 package id.sela.feature.map
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -14,12 +12,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import id.sela.designsystem.*
 import id.sela.model.*
 import java.time.Instant
@@ -33,6 +33,16 @@ private fun formatEta(minutes: Double): String = when {
     minutes < 1.0 -> "tiba"
     else -> "≈ ${minutes.roundToInt()} mnt"
 }
+
+/** Angka hitung mundur ETA pastel — tabular, tidak bergeser saat berubah. */
+private val EtaNumeralsPastel = TextStyle(
+    fontWeight = FontWeight.ExtraBold,
+    fontSize = 34.sp,
+    lineHeight = 40.sp,
+    letterSpacing = (-0.5).sp,
+    fontFeatureSettings = "tnum",
+)
+private val EtaNumeralsSmallPastel = EtaNumeralsPastel.copy(fontSize = 22.sp, lineHeight = 28.sp)
 
 // Timestamp feed yang rusak tidak boleh merusak sheet atau menyiratkan kesegaran.
 private fun readableObservation(value: String): String = runCatching {
@@ -51,12 +61,13 @@ private fun DetailHeader(title: String, subtitle: String, modifier: Modifier = M
         Text(
             title,
             style = MaterialTheme.typography.headlineMedium,
+            color = SelaPastel.ink,
             modifier = Modifier.semantics { heading() },
         )
         Text(
             subtitle,
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = SelaPastel.inkSoft,
         )
     }
 }
@@ -64,18 +75,22 @@ private fun DetailHeader(title: String, subtitle: String, modifier: Modifier = M
 @Composable
 private fun FavoriteButton(selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
     if (selected) {
-        SelaSecondaryButton(
+        SelaButton(
             text = "Hapus dari favorit",
             onClick = onClick,
+            style = SelaButtonStyle.Soft,
+            accent = SelaPastel.pink,
+            onAccent = SelaPastel.pinkDeep,
             icon = Icons.Default.Favorite,
             modifier = modifier
                 .fillMaxWidth()
                 .semantics { stateDescription = "Tersimpan di favorit" },
         )
     } else {
-        SelaPrimaryButton(
+        SelaButton(
             text = "Simpan ke favorit",
             onClick = onClick,
+            style = SelaButtonStyle.Primary,
             icon = Icons.Default.FavoriteBorder,
             modifier = modifier
                 .fillMaxWidth()
@@ -84,7 +99,7 @@ private fun FavoriteButton(selected: Boolean, onClick: () -> Unit, modifier: Mod
     }
 }
 
-/** Kartu pemberitahuan di dalam sheet — netral atau peringatan. */
+/** Kartu pemberitahuan di dalam sheet — netral atau peringatan, pastel. */
 @Composable
 private fun SheetNotice(
     title: String,
@@ -93,20 +108,22 @@ private fun SheetNotice(
     warning: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
-    val bg = if (warning) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surfaceVariant
-    val fg = if (warning) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSurfaceVariant
-    Surface(
-        shape = SelaTokens.cardSmall,
-        color = bg,
-        contentColor = fg,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+    PastelCard(
+        tint = if (warning) SelaPastel.dangerSoft else SelaPastel.blueSoft,
+        shadowTint = if (warning) SelaPastel.dangerDeep else SelaPastel.blueDeep,
         modifier = modifier.fillMaxWidth(),
+        contentPadding = PaddingValues(16.dp),
     ) {
-        Row(Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Icon(icon, contentDescription = null, modifier = Modifier.size(24.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Icon(
+                icon,
+                contentDescription = null,
+                tint = if (warning) SelaPastel.dangerDeep else SelaPastel.blueDeep,
+                modifier = Modifier.size(24.dp),
+            )
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(title, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface)
-                Text(message, style = MaterialTheme.typography.bodyMedium)
+                Text(title, style = MaterialTheme.typography.titleSmall, color = SelaPastel.ink)
+                Text(message, style = MaterialTheme.typography.bodyMedium, color = SelaPastel.inkSoft)
             }
         }
     }
@@ -127,7 +144,7 @@ private fun ArrivalTimelineRow(
     isLast: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val lineColor = MaterialTheme.colorScheme.outlineVariant
+    val lineColor = SelaPastel.hairline
     Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
         // Rel timeline
         Box(
@@ -142,9 +159,13 @@ private fun ArrivalTimelineRow(
             contentAlignment = Alignment.Center,
         ) {
             if (isFirst) {
-                SelaPulseDot(active = true, modifier = Modifier.size(12.dp))
+                PastelPulseDot(active = true, color = SelaPastel.mintDeep, modifier = Modifier.size(12.dp))
             } else {
-                Surface(shape = CircleShape, color = MaterialTheme.colorScheme.outline, modifier = Modifier.size(8.dp)) {}
+                Surface(
+                    shape = androidx.compose.foundation.shape.CircleShape,
+                    color = SelaPastel.hairline,
+                    modifier = Modifier.size(8.dp),
+                ) {}
             }
         }
         // Isi
@@ -160,19 +181,19 @@ private fun ArrivalTimelineRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    SelaRouteBadge(estimate.routeId)
-                    Text("Bus ${estimate.vehicleId}", style = MaterialTheme.typography.bodyMedium)
+                    PastelRouteBadge(estimate.routeId)
+                    Text("Bus ${estimate.vehicleId}", style = MaterialTheme.typography.bodyMedium, color = SelaPastel.ink)
                 }
                 Text(
                     "≈ ${estimate.distanceMeters.roundToInt()} m dari halte",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = SelaPastel.inkSoft,
                 )
             }
             Text(
                 formatEta(estimate.etaMinutes),
-                style = if (isFirst) EtaNumerals else EtaNumeralsSmall,
-                color = if (isFirst) SelaPalette.volt else MaterialTheme.colorScheme.onSurface,
+                style = if (isFirst) EtaNumeralsPastel else EtaNumeralsSmallPastel,
+                color = if (isFirst) SelaPastel.mintDeep else SelaPastel.ink,
             )
         }
     }
@@ -206,7 +227,7 @@ fun StopDetailSheet(
     onShare: (ArrivalEstimate) -> Unit = {},
     extras: StopSheetExtras = StopSheetExtras(),
 ) {
-    SelaSheetBody {
+    PastelSheetBody {
         DetailHeader(
             stop.name,
             stop.code?.takeIf { it.isNotBlank() }?.let { "Halte · $it" } ?: "Halte",
@@ -214,7 +235,7 @@ fun StopDetailSheet(
 
         // Estimasi kedatangan — pahlawan layar ini
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            SelaSectionTitle("Bus berikutnya")
+            PastelSectionTitle("Bus berikutnya")
             if (arrivals.isEmpty()) {
                 SheetNotice(
                     "Belum ada estimasi",
@@ -230,18 +251,18 @@ fun StopDetailSheet(
                 Text(
                     "Estimasi lokal dari posisi bus terakhir di perangkat ini — bukan jadwal resmi.",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = SelaPastel.inkSoft,
                 )
                 // Bagikan ETA tercepat (fitur #12) + ajak bareng (fitur #71)
                 Row(
                     Modifier.align(Alignment.End),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    SelaGhostButton(
+                    PastelTextButton(
                         text = "Ajak bareng",
                         onClick = { extras.onKonvoi(arrivals.first()) },
                     )
-                    SelaGhostButton(
+                    PastelTextButton(
                         text = "Bagikan",
                         onClick = { onShare(arrivals.first()) },
                     )
@@ -256,19 +277,19 @@ fun StopDetailSheet(
 
         // Rute di halte ini
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            SelaSectionTitle("Rute di halte ini")
+            PastelSectionTitle("Rute di halte ini")
             if (stop.routeIds.isEmpty()) {
                 Text(
                     "Informasi rute belum tersedia.",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = SelaPastel.inkSoft,
                 )
             } else {
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    stop.routeIds.forEach { SelaRouteBadge(it) }
+                    stop.routeIds.forEach { PastelRouteBadge(it) }
                 }
             }
         }
@@ -290,7 +311,9 @@ fun RouteDetailSheet(
     onFavorite: () -> Unit,
     onShowMap: () -> Unit,
 ) {
-    SelaSheetBody {
+    val tint = route.displayServiceType.pastelColor()
+    val deep = route.displayServiceType.pastelDeepColor()
+    PastelSheetBody {
         Row(
             Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -301,22 +324,22 @@ fun RouteDetailSheet(
                 route.displayServiceType.label(),
                 modifier = Modifier.weight(1f),
             )
-            SelaRouteBadge(route.shortName, route.displayServiceType.color())
+            PastelRouteBadge(route.shortName, tint = tint, deep = deep)
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            SelaSectionTitle("Jalur perjalanan")
+            PastelSectionTitle("Jalur perjalanan")
             when {
                 loading -> {
                     LinearProgressIndicator(
                         modifier = Modifier.fillMaxWidth(),
-                        color = SelaPalette.volt,
-                        trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                        color = SelaPastel.mintDeep,
+                        trackColor = SelaPastel.mintSoft,
                     )
                     Text(
                         "Memuat jalur rute…",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = SelaPastel.inkSoft,
                     )
                 }
                 shapeAvailable -> SheetNotice("Jalur tersedia", "Lihat lintasan rute di peta.", Icons.Default.Route)
@@ -328,7 +351,13 @@ fun RouteDetailSheet(
             }
         }
 
-        SelaPrimaryButton("Lihat peta", onShowMap, icon = Icons.Default.Map, modifier = Modifier.fillMaxWidth())
+        SelaButton(
+            text = "Lihat peta",
+            onClick = onShowMap,
+            style = SelaButtonStyle.Primary,
+            icon = Icons.Default.Map,
+            modifier = Modifier.fillMaxWidth(),
+        )
         FavoriteButton(favorite, onFavorite)
     }
 }
@@ -341,7 +370,8 @@ fun RouteDetailSheet(
 fun VehicleDetailSheet(vehicle: Vehicle, route: Route?, onRoute: (String) -> Unit) {
     val observedAt = remember(vehicle.observedAt) { readableObservation(vehicle.observedAt) }
     val speed = vehicle.speedKmh?.takeIf { it.isFinite() && it >= 0 }
-    SelaSheetBody {
+    val type = route?.displayServiceType
+    PastelSheetBody {
         Row(
             Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -352,7 +382,11 @@ fun VehicleDetailSheet(vehicle: Vehicle, route: Route?, onRoute: (String) -> Uni
                 route?.longName?.takeIf { it.isNotBlank() } ?: "Detail rute belum tersedia",
                 modifier = Modifier.weight(1f),
             )
-            SelaRouteBadge(route?.shortName ?: vehicle.routeId, route?.displayServiceType?.color() ?: MaterialTheme.colorScheme.primary)
+            PastelRouteBadge(
+                route?.shortName ?: vehicle.routeId,
+                tint = type?.pastelColor() ?: SelaPastel.blue,
+                deep = type?.pastelDeepColor() ?: SelaPastel.blueDeep,
+            )
         }
 
         SheetNotice(
@@ -366,20 +400,23 @@ fun VehicleDetailSheet(vehicle: Vehicle, route: Route?, onRoute: (String) -> Uni
             warning = vehicle.isStale,
         )
 
-        SelaCard {
-            SelaSectionTitle("Detail bus")
-            SelaKeyValueRow("Pembaruan terakhir", observedAt)
-            SelaKeyValueRow("Kecepatan terakhir", speed?.let { "${it.toInt()} km/jam" } ?: "Belum tersedia")
-            SelaKeyValueRow(
+        PastelCard(tint = SelaPastel.cream) {
+            PastelSectionTitle("Detail bus")
+            PastelKeyValueRow("Pembaruan terakhir", observedAt)
+            PastelKeyValueRow("Kecepatan terakhir", speed?.let { "${it.toInt()} km/jam" } ?: "Belum tersedia")
+            PastelKeyValueRow(
                 "Status",
                 if (vehicle.isStale) "Tidak aktif" else "Live",
             )
         }
 
         if (route != null) {
-            SelaSecondaryButton(
-                "Lihat rute ${route.shortName}",
-                { onRoute(route.id) },
+            SelaButton(
+                text = "Lihat rute ${route.shortName}",
+                onClick = { onRoute(route.id) },
+                style = SelaButtonStyle.Soft,
+                accent = type?.pastelColor() ?: SelaPastel.blue,
+                onAccent = type?.pastelDeepColor() ?: SelaPastel.blueDeep,
                 icon = Icons.Default.Route,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -393,7 +430,7 @@ fun VehicleDetailSheet(vehicle: Vehicle, route: Route?, onRoute: (String) -> Uni
 
 @Composable
 fun ColumnScope.FavoritesList(data: TransitData, onSelect: (String, String) -> Unit, onRemove: (String, String) -> Unit) {
-    SelaSheetHeader(
+    PastelSheetHeader(
         title = "Favorit",
         subtitle = "Halte dan rute pilihan, tersimpan di perangkat.",
     )
@@ -406,18 +443,18 @@ fun ColumnScope.FavoritesList(data: TransitData, onSelect: (String, String) -> U
     ) {
         if (data.favorites.isEmpty()) {
             item(key = "favorites-empty") {
-                SelaCard {
+                PastelCard(tint = SelaPastel.pinkSoft) {
                     Icon(
                         Icons.Default.FavoriteBorder,
                         contentDescription = null,
-                        tint = SelaPalette.volt,
+                        tint = SelaPastel.pinkDeep,
                         modifier = Modifier.size(32.dp),
                     )
-                    Text("Simpan perjalananmu", style = MaterialTheme.typography.titleMedium)
+                    Text("Simpan perjalananmu", style = MaterialTheme.typography.titleMedium, color = SelaPastel.ink)
                     Text(
                         "Buka detail halte atau rute, lalu pilih Simpan ke favorit.",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = SelaPastel.inkSoft,
                     )
                 }
             }
@@ -428,41 +465,47 @@ fun ColumnScope.FavoritesList(data: TransitData, onSelect: (String, String) -> U
             val route = if (!isStop) data.routes.find { it.id == item.id } else null
             val title = stop?.name ?: route?.longName?.takeIf { it.isNotBlank() }
                 ?: "${if (isStop) "Halte" else "Rute"} ${item.id}"
-            SelaCard {
+            val type = route?.displayServiceType
+            PastelCard {
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         if (isStop) Icons.Default.DirectionsBus else Icons.Default.Route,
                         contentDescription = null,
-                        tint = SelaPalette.volt,
+                        tint = type?.pastelDeepColor() ?: SelaPastel.blueDeep,
                     )
-                    Text(title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                    Text(title, style = MaterialTheme.typography.titleMedium, color = SelaPastel.ink, modifier = Modifier.weight(1f))
                 }
-                if (route != null) SelaRouteBadge(route.shortName, route.displayServiceType.color())
+                if (route != null) PastelRouteBadge(
+                    route.shortName,
+                    tint = type?.pastelColor() ?: SelaPastel.blue,
+                    deep = type?.pastelDeepColor() ?: SelaPastel.blueDeep,
+                )
                 Text(
                     if (stop == null && route == null) "Detail belum tersedia di perangkat."
                     else if (isStop) "Halte tersimpan"
                     else "${route!!.displayServiceType.label()} · Rute tersimpan",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = SelaPastel.inkSoft,
                 )
                 Row(
                     Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    SelaSecondaryButton(
-                        if (isStop) "Buka halte" else "Buka rute",
-                        { onSelect(item.kind, item.id) },
+                    SelaButton(
+                        text = if (isStop) "Buka halte" else "Buka rute",
+                        onClick = { onSelect(item.kind, item.id) },
+                        style = SelaButtonStyle.Soft,
                         modifier = Modifier.weight(1f),
                     )
                     IconButton(
                         onClick = { onRemove(item.id, item.kind) },
-                        modifier = Modifier.size(SelaTokens.touchTarget),
+                        modifier = Modifier.size(48.dp),
                     ) {
                         Icon(
                             Icons.Default.DeleteOutline,
                             contentDescription = "Hapus $title dari favorit",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            tint = SelaPastel.inkSoft,
                         )
                     }
                 }

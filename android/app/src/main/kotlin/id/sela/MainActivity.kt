@@ -13,6 +13,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Chat
@@ -20,6 +22,11 @@ import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Route
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -33,7 +40,10 @@ import dagger.hilt.components.SingletonComponent
 import id.sela.a11y.A11y
 import id.sela.ar.ArScreen
 import id.sela.assistant.KonduktorScreen
-import id.sela.designsystem.SelaTheme
+import id.sela.designsystem.GlassPillNavBar
+import id.sela.designsystem.SelaPastel
+import id.sela.designsystem.SelaPastelShapes
+import id.sela.designsystem.SelaPastelTheme
 import id.sela.feature.map.*
 import id.sela.feature.settings.HistoryScreen
 import id.sela.feature.settings.OfflineMapScreen
@@ -87,12 +97,11 @@ interface ThemePrefsEntryPoint {
                 EntryPointAccessors.fromApplication(
                     applicationContext, ThemePrefsEntryPoint::class.java).prefs()
             }
-            val amoled by prefs.amoledDark.collectAsState(initial = false)
-            val materialYou by prefs.materialYou.collectAsState(initial = false)
             val map3d by prefs.map3dEnabled.collectAsState(initial = false)
             val touristMode by prefs.touristMode.collectAsState(initial = false)
             val context = LocalContext.current
-            SelaTheme(amoled = amoled, dynamicColor = materialYou) {
+            // Tema pastel "Pagi Cerah" — satu-satunya tema (tanpa varian gelap).
+            SelaPastelTheme {
                 SelaScaffold(
                     show3dBuildings = map3d,
                     stopExtras = StopSheetExtras(
@@ -141,6 +150,41 @@ interface ThemePrefsEntryPoint {
         launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
     }
 }
+/** Satu item navigasi bawah — pil kaca, aktif = putih solid + ikon biru. */
+@Composable
+private fun PastelNavItem(
+    route: String,
+    label: String,
+    icon: ImageVector,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    Surface(
+        onClick = onClick,
+        shape = SelaPastelShapes.pill,
+        color = if (selected) Color.White.copy(alpha = 0.95f) else Color.Transparent,
+        modifier = Modifier.semantics { this.selected = selected; role = Role.Tab },
+    ) {
+        Column(
+            Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            Icon(
+                icon,
+                contentDescription = null,
+                tint = if (selected) SelaPastel.blueDeep else SelaPastel.inkSoft,
+                modifier = Modifier.size(22.dp),
+            )
+            Text(
+                label,
+                style = MaterialTheme.typography.labelSmall,
+                color = if (selected) SelaPastel.ink else SelaPastel.inkSoft,
+            )
+        }
+    }
+}
+
 @Composable fun SelaScaffold(
     show3dBuildings: Boolean = false,
     stopExtras: StopSheetExtras = StopSheetExtras(),
@@ -167,22 +211,33 @@ interface ThemePrefsEntryPoint {
         }
     }
     val showBottomBar = currentRoute in listOf("map", "history", "trip-planner", "konduktor", "settings")
-    Scaffold(bottomBar = {
+    Scaffold(
+        containerColor = SelaPastel.background,
+        bottomBar = {
         if (showBottomBar) {
-        NavigationBar {
-            listOf(
-                Triple("map", "Peta", Icons.Default.Map),
-                Triple("history", "Riwayat", Icons.Default.History),
-                Triple("trip-planner", "Rencana", Icons.Default.Route),
-                Triple("konduktor", "Kondektur", Icons.Default.Chat),
-                Triple("settings", "Pengaturan", Icons.Default.Settings),
-            ).forEach { (route, label, icon) ->
-                NavigationBarItem(
-                    selected = currentRoute == route,
-                    onClick = { nav.navigate(route) { launchSingleTop = true; popUpTo(nav.graph.startDestinationId) { saveState = true }; restoreState = true } },
-                    icon = { Icon(icon, contentDescription = null) },
-                    label = { Text(label) },
-                )
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            GlassPillNavBar {
+                listOf(
+                    Triple("map", "Peta", Icons.Default.Map),
+                    Triple("history", "Riwayat", Icons.Default.History),
+                    Triple("trip-planner", "Rencana", Icons.Default.Route),
+                    Triple("konduktor", "Kondektur", Icons.Default.Chat),
+                    Triple("settings", "Pengaturan", Icons.Default.Settings),
+                ).forEach { (route, label, icon) ->
+                    PastelNavItem(
+                        route = route,
+                        label = label,
+                        icon = icon,
+                        selected = currentRoute == route,
+                        onClick = { nav.navigate(route) { launchSingleTop = true; popUpTo(nav.graph.startDestinationId) { saveState = true }; restoreState = true } },
+                    )
+                }
             }
         }
         }

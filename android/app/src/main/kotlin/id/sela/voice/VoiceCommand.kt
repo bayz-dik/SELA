@@ -6,15 +6,28 @@ import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import id.sela.designsystem.SelaPastel
+import id.sela.designsystem.SelaPastelShadows
+import id.sela.designsystem.SelaPastelShapes
+import id.sela.designsystem.pastelShadow
 
 /**
  * Hasil parsing perintah suara (fitur #10 "Voice command").
@@ -95,7 +108,8 @@ fun VoiceInputButton(
     }
     val available = remember { SpeechRecognizer.isRecognitionAvailable(context) }
 
-    Button(
+    // Pil kaca pastel — bukan Button gelap.
+    Surface(
         onClick = {
             val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
                 putExtra(
@@ -108,9 +122,27 @@ fun VoiceInputButton(
             runCatching { launcher.launch(intent) }
         },
         enabled = available,
-        modifier = modifier,
+        modifier = modifier.pastelShadow(
+            elevation = SelaPastelShadows.soft,
+            shape = SelaPastelShapes.pill,
+        ),
+        shape = SelaPastelShapes.pill,
+        color = Color.White.copy(alpha = 0.88f),
+        contentColor = SelaPastel.ink,
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.7f)),
     ) {
-        Icon(Icons.Filled.Mic, contentDescription = null)
-        Text(label)
+        Row(
+            Modifier.padding(horizontal = 18.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                Icons.Filled.Mic,
+                contentDescription = null,
+                tint = SelaPastel.purpleDeep,
+                modifier = Modifier.size(20.dp),
+            )
+            Text(label, style = MaterialTheme.typography.labelLarge)
+        }
     }
 }

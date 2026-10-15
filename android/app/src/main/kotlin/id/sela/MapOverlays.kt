@@ -7,21 +7,27 @@ import android.content.Context
 import android.location.LocationManager
 import android.os.Build
 import android.util.Rational
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PictureInPictureAlt
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import id.sela.designsystem.SelaPastel
+import id.sela.designsystem.SelaPastelShadows
+import id.sela.designsystem.pastelShadow
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
@@ -91,7 +97,8 @@ fun MapActionOverlays(viewModel: MapViewModel, modifier: Modifier = Modifier) {
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         VoiceInputButton(onResult = ::handleVoice)
-        IconButton(
+        // Tombol mini — lingkaran kaca pastel.
+        Surface(
             onClick = {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     (context as? Activity)?.enterPictureInPictureMode(
@@ -101,8 +108,24 @@ fun MapActionOverlays(viewModel: MapViewModel, modifier: Modifier = Modifier) {
                     )
                 }
             },
+            shape = androidx.compose.foundation.shape.CircleShape,
+            color = Color.White.copy(alpha = 0.88f),
+            contentColor = SelaPastel.inkSoft,
+            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.7f)),
+            modifier = Modifier
+                .size(52.dp)
+                .pastelShadow(
+                    elevation = SelaPastelShadows.soft,
+                    shape = androidx.compose.foundation.shape.CircleShape,
+                ),
         ) {
-            Icon(Icons.Default.PictureInPictureAlt, contentDescription = "Mode mini")
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    Icons.Default.PictureInPictureAlt,
+                    contentDescription = "Mode mini",
+                    modifier = Modifier.size(22.dp),
+                )
+            }
         }
         GoHomeFab(onClick = { goHome(context, entry, viewModel, scope) })
     }

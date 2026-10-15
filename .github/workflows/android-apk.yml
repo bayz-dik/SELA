@@ -1,0 +1,50 @@
+name: Build SELA Android APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Setup Android SDK
+        run: |
+          export ANDROID_HOME=/usr/local/lib/android/sdk
+          export ANDROID_SDK_ROOT=/usr/local/lib/android/sdk
+          echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
+
+      - name: Generate keystore
+        run: |
+          rm -f android/app/sela-release.keystore
+          keytool -genkeypair -v \
+            -keystore android/app/sela-release.keystore \
+            -alias "${{ secrets.SELA_KEY_ALIAS }}" \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass "${{ secrets.SELA_KEYSTORE_PASSWORD }}" \
+            -keypass "${{ secrets.SELA_KEY_PASSWORD }}" \
+            -dname "CN=SELA, OU=SELA, O=SELA, L=Jakarta, ST=Jakarta, C=ID"
+
+      - name: Build release APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew :app:assembleRelease --no-daemon \
+            -Psela.keystore.password="${{ secrets.SELA_KEYSTORE_PASSWORD }}" \
+            -Psela.key.alias="${{ secrets.SELA_KEY_ALIAS }}" \
+            -Psela.key.password="${{ secrets.SELA_KEY_PASSWORD }}"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sela-apk
+          path: android/app/build/outputs/apk/release/*.apk

@@ -1,0 +1,16 @@
+# Android
+*.iml
+.gradle/
+/local.properties
+/.idea/
+/build/
+*/build/
+*.apk
+*.aab
+# Keystore
+*.keystore
+*.jks
+# Firebase
+google-services.json
+# OS
+.DS_Store

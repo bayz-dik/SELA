@@ -1,0 +1,631 @@
+Picked up JAVA_TOOL_OPTIONS:  -Djava.net.preferIPv4Stack=true
+Warning: Failed to download any source lists!
+Warning: IO exception while downloading manifest:
+javax.net.ssl.SSLException: Unsupported or unrecognized SSL message
+	at java.base/sun.security.ssl.SSLSocketInputRecord.handleUnknownRecord(SSLSocketInputRecord.java:462)
+	at java.base/sun.security.ssl.SSLSocketInputRecord.decode(SSLSocketInputRecord.java:175)
+	at java.base/sun.security.ssl.SSLTransport.decode(SSLTransport.java:111)
+	at java.base/sun.security.ssl.SSLSocketImpl.decode(SSLSocketImpl.java:1505)
+	at java.base/sun.security.ssl.SSLSocketImpl.readHandshakeRecord(SSLSocketImpl.java:1420)
+	at java.base/sun.security.ssl.SSLSocketImpl.startHandshake(SSLSocketImpl.java:455)
+	at java.base/sun.security.ssl.SSLSocketImpl.startHandshake(SSLSocketImpl.java:426)
+	at java.base/sun.net.www.protocol.https.HttpsClient.afterConnect(HttpsClient.java:593)
+	at java.base/sun.net.www.protocol.https.AbstractDelegateHttpsURLConnection.connect(AbstractDelegateHttpsURLConnection.java:190)
+	at java.base/sun.net.www.protocol.https.HttpsURLConnectionImpl.connect(HttpsURLConnectionImpl.java:141)
+	at com.android.sdklib.repository.legacy.remote.internal.DownloadCache.openUrl(DownloadCache.java:254)
+	at com.android.sdklib.repository.legacy.remote.internal.DownloadCache.downloadAndCache(DownloadCache.java:631)
+	at com.android.sdklib.repository.legacy.remote.internal.DownloadCache.openCachedUrl(DownloadCache.java:554)
+	at com.android.sdklib.repository.legacy.LegacyDownloader.downloadAndStream(LegacyDownloader.java:82)
+	at com.android.repository.impl.downloader.LocalFileAwareDownloader.downloadAndStream(LocalFileAwareDownloader.java:51)
+	at com.android.repository.impl.manager.RemoteRepoLoaderImpl.lambda$fetchPackages$0(RemoteRepoLoaderImpl.java:137)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:572)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+	Suppressed: java.net.SocketException: Broken pipe
+		at java.base/sun.nio.ch.SocketDispatcher.write0(Native Method)
+		at java.base/sun.nio.ch.SocketDispatcher.write(SocketDispatcher.java:65)
+		at java.base/sun.nio.ch.NioSocketImpl.tryWrite(NioSocketImpl.java:394)
+		at java.base/sun.nio.ch.NioSocketImpl.implWrite(NioSocketImpl.java:410)
+		at java.base/sun.nio.ch.NioSocketImpl.write(NioSocketImpl.java:440)
+		at java.base/sun.nio.ch.NioSocketImpl$2.write(NioSocketImpl.java:819)
+		at java.base/java.net.Socket$SocketOutputStream.write(Socket.java:1195)
+		at java.base/sun.security.ssl.SSLSocketOutputRecord.encodeAlert(SSLSocketOutputRecord.java:81)
+		at java.base/sun.security.ssl.TransportContext.fatal(TransportContext.java:419)
+		at java.base/sun.security.ssl.TransportContext.fatal(TransportContext.java:326)
+		at java.base/sun.security.ssl.TransportContext.fatal(TransportContext.java:321)
+		at java.base/sun.security.ssl.SSLTransport.decode(SSLTransport.java:145)
+		... 18 more
+Warning: IO exception while downloading manifest:
+javax.net.ssl.SSLException: Unsupported or unrecognized SSL message
+	at java.base/sun.security.ssl.SSLSocketInputRecord.handleUnknownRecord(SSLSocketInputRecord.java:462)
+	at java.base/sun.security.ssl.SSLSocketInputRecord.decode(SSLSocketInputRecord.java:175)
+	at java.base/sun.security.ssl.SSLTransport.decode(SSLTransport.java:111)
+	at java.base/sun.security.ssl.SSLSocketImpl.decode(SSLSocketImpl.java:1505)
+	at java.base/sun.security.ssl.SSLSocketImpl.readHandshakeRecord(SSLSocketImpl.java:1420)
+	at java.base/sun.security.ssl.SSLSocketImpl.startHandshake(SSLSocketImpl.java:455)
+	at java.base/sun.security.ssl.SSLSocketImpl.startHandshake(SSLSocketImpl.java:426)
+	at java.base/sun.net.www.protocol.https.HttpsClient.afterConnect(HttpsClient.java:593)
+	at java.base/sun.net.www.protocol.https.AbstractDelegateHttpsURLConnection.connect(AbstractDelegateHttpsURLConnection.java:190)
+	at java.base/sun.net.www.protocol.https.HttpsURLConnectionImpl.connect(HttpsURLConnectionImpl.java:141)
+	at com.android.sdklib.repository.legacy.remote.internal.DownloadCache.openUrl(DownloadCache.java:254)
+	at com.android.sdklib.repository.legacy.remote.internal.DownloadCache.downloadAndCache(DownloadCache.java:631)
+	at com.android.sdklib.repository.legacy.remote.internal.DownloadCache.openCachedUrl(DownloadCache.java:554)
+	at com.android.sdklib.repository.legacy.LegacyDownloader.downloadAndStream(LegacyDownloader.java:82)
+	at com.android.repository.impl.downloader.LocalFileAwareDownloader.downloadAndStream(LocalFileAwareDownloader.java:51)
+	at com.android.repository.impl.manager.RemoteRepoLoaderImpl.lambda$fetchPackages$0(RemoteRepoLoaderImpl.java:137)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:572)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+	Suppressed: java.net.SocketException: Broken pipe
+		at java.base/sun.nio.ch.SocketDispatcher.write0(Native Method)
+		at java.base/sun.nio.ch.SocketDispatcher.write(SocketDispatcher.java:65)
+		at java.base/sun.nio.ch.NioSocketImpl.tryWrite(NioSocketImpl.java:394)
+		at java.base/sun.nio.ch.NioSocketImpl.implWrite(NioSocketImpl.java:410)
+		at java.base/sun.nio.ch.NioSocketImpl.write(NioSocketImpl.java:440)
+		at java.base/sun.nio.ch.NioSocketImpl$2.write(NioSocketImpl.java:819)
+		at java.base/java.net.Socket$SocketOutputStream.write(Socket.java:1195)
+		at java.base/sun.security.ssl.SSLSocketOutputRecord.encodeAlert(SSLSocketOutputRecord.java:81)
+		at java.base/sun.security.ssl.TransportContext.fatal(TransportContext.java:419)
+		at java.base/sun.security.ssl.TransportContext.fatal(TransportContext.java:326)
+		at java.base/sun.security.ssl.TransportContext.fatal(TransportContext.java:321)
+		at java.base/sun.security.ssl.SSLTransport.decode(SSLTransport.java:145)
+		... 18 more
+Warning: Still waiting for package manifests to be fetched remotely.
+> Task :core:model:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :core:model:compileKotlin UP-TO-DATE
+> Task :core:model:compileJava NO-SOURCE
+> Task :core:model:processResources NO-SOURCE
+> Task :core:model:classes UP-TO-DATE
+> Task :core:model:jar UP-TO-DATE
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:generateDebugBuildConfig
+> Task :core:database:preBuild UP-TO-DATE
+> Task :core:database:preDebugBuild UP-TO-DATE
+> Task :core:designsystem:preBuild UP-TO-DATE
+> Task :core:designsystem:preDebugBuild UP-TO-DATE
+> Task :core:database:writeDebugAarMetadata
+> Task :core:location:preBuild UP-TO-DATE
+> Task :core:designsystem:writeDebugAarMetadata
+> Task :core:location:preDebugBuild UP-TO-DATE
+> Task :core:network:preBuild UP-TO-DATE
+> Task :core:network:preDebugBuild UP-TO-DATE
+> Task :core:location:writeDebugAarMetadata
+> Task :feature:map:preBuild UP-TO-DATE
+> Task :feature:map:preDebugBuild UP-TO-DATE
+> Task :core:network:writeDebugAarMetadata
+> Task :feature:search:preBuild UP-TO-DATE
+> Task :feature:search:preDebugBuild UP-TO-DATE
+> Task :feature:map:writeDebugAarMetadata
+> Task :feature:settings:preBuild UP-TO-DATE
+> Task :feature:search:writeDebugAarMetadata
+> Task :feature:settings:preDebugBuild UP-TO-DATE
+> Task :feature:settings:writeDebugAarMetadata
+> Task :app:generateDebugResValues
+> Task :core:database:generateDebugResValues
+> Task :app:checkDebugAarMetadata
+> Task :core:database:generateDebugResources
+> Task :core:database:packageDebugResources
+> Task :core:designsystem:generateDebugResValues UP-TO-DATE
+> Task :core:designsystem:generateDebugResources UP-TO-DATE
+> Task :core:designsystem:packageDebugResources UP-TO-DATE
+> Task :core:location:generateDebugResValues
+> Task :core:location:generateDebugResources
+> Task :core:location:packageDebugResources
+> Task :core:network:generateDebugResValues
+> Task :core:network:generateDebugResources
+> Task :core:network:packageDebugResources
+> Task :feature:map:generateDebugResValues
+> Task :feature:map:generateDebugResources
+> Task :feature:map:packageDebugResources
+> Task :feature:search:generateDebugResValues UP-TO-DATE
+> Task :feature:search:generateDebugResources UP-TO-DATE
+> Task :feature:search:packageDebugResources UP-TO-DATE
+> Task :feature:settings:generateDebugResValues
+> Task :feature:settings:generateDebugResources
+> Task :feature:settings:packageDebugResources
+> Task :app:mapDebugSourceSetPaths
+> Task :app:generateDebugResources
+> Task :app:createDebugCompatibleScreenManifests
+> Task :app:extractDeepLinksDebug
+> Task :core:database:extractDeepLinksDebug
+> Task :app:mergeDebugResources
+> Task :app:packageDebugResources
+> Task :core:database:processDebugManifest
+> Task :core:designsystem:extractDeepLinksDebug
+> Task :core:designsystem:processDebugManifest
+> Task :core:location:extractDeepLinksDebug
+> Task :core:location:processDebugManifest
+> Task :core:network:extractDeepLinksDebug
+> Task :core:network:processDebugManifest
+> Task :feature:map:extractDeepLinksDebug
+> Task :app:parseDebugLocalResources
+> Task :feature:search:extractDeepLinksDebug
+> Task :feature:map:processDebugManifest
+> Task :feature:search:processDebugManifest
+> Task :feature:settings:extractDeepLinksDebug
+> Task :feature:settings:processDebugManifest
+> Task :core:database:compileDebugLibraryResources
+> Task :app:processDebugMainManifest
+> Task :app:processDebugManifest
+> Task :app:processDebugManifestForPackage
+> Task :core:database:parseDebugLocalResources
+> Task :core:designsystem:compileDebugLibraryResources
+> Task :core:designsystem:parseDebugLocalResources UP-TO-DATE
+> Task :core:designsystem:generateDebugRFile UP-TO-DATE
+> Task :core:location:compileDebugLibraryResources
+> Task :core:location:parseDebugLocalResources
+> Task :core:database:generateDebugRFile
+> Task :core:network:compileDebugLibraryResources
+> Task :core:location:generateDebugRFile
+> Task :core:network:parseDebugLocalResources
+> Task :feature:map:compileDebugLibraryResources
+> Task :core:network:generateDebugRFile
+> Task :feature:map:parseDebugLocalResources
+> Task :feature:search:compileDebugLibraryResources
+> Task :feature:search:parseDebugLocalResources UP-TO-DATE
+> Task :feature:map:generateDebugRFile
+> Task :feature:search:generateDebugRFile UP-TO-DATE
+> Task :feature:settings:compileDebugLibraryResources
+> Task :core:designsystem:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :core:designsystem:generateDebugBuildConfig UP-TO-DATE
+> Task :feature:settings:parseDebugLocalResources
+> Task :feature:settings:generateDebugRFile
+> Task :core:designsystem:compileDebugKotlin UP-TO-DATE
+> Task :core:designsystem:javaPreCompileDebug UP-TO-DATE
+> Task :core:designsystem:compileDebugJavaWithJavac UP-TO-DATE
+> Task :core:designsystem:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :core:database:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :core:database:generateDebugBuildConfig
+> Task :app:processDebugResources
+> Task :core:database:javaPreCompileDebug
+> Task :core:network:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :core:network:generateDebugBuildConfig
+> Task :core:network:javaPreCompileDebug
+> Task :core:designsystem:bundleLibRuntimeToJarDebug
+> Task :core:location:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :core:location:generateDebugBuildConfig
+
+> Task :core:location:compileDebugKotlin
+w: file:///home/hatch/workspace/sela/apps/android/core/location/src/main/kotlin/id/sela/location/ForegroundLocation.kt:9:8 'class CancellationSignal : Any' is deprecated. Deprecated in Java.
+w: file:///home/hatch/workspace/sela/apps/android/core/location/src/main/kotlin/id/sela/location/ForegroundLocation.kt:28:32 'constructor(): CancellationSignal' is deprecated. Deprecated in Java.
+w: file:///home/hatch/workspace/sela/apps/android/core/location/src/main/kotlin/id/sela/location/ForegroundLocation.kt:31:39 'static fun getCurrentLocation(p0: LocationManager, p1: String, p2: CancellationSignal?, p3: Executor, p4: Consumer<Location!>): Unit' is deprecated. Deprecated in Java.
+
+> Task :core:location:javaPreCompileDebug
+> Task :core:database:kspDebugKotlin
+> Task :core:location:compileDebugJavaWithJavac
+> Task :core:location:bundleLibCompileToJarDebug
+> Task :core:location:bundleLibRuntimeToJarDebug
+> Task :feature:map:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :feature:map:generateDebugBuildConfig
+> Task :feature:search:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :feature:search:generateDebugBuildConfig UP-TO-DATE
+> Task :feature:search:compileDebugKotlin UP-TO-DATE
+> Task :feature:search:javaPreCompileDebug
+> Task :feature:search:compileDebugJavaWithJavac
+> Task :feature:search:bundleLibCompileToJarDebug
+> Task :core:database:compileDebugKotlin
+> Task :core:database:compileDebugJavaWithJavac
+> Task :core:database:bundleLibCompileToJarDebug
+> Task :core:database:bundleLibRuntimeToJarDebug
+> Task :feature:map:kspDebugKotlin
+> Task :core:network:kspDebugKotlin
+> Task :feature:map:compileDebugKotlin
+> Task :feature:map:javaPreCompileDebug
+> Task :feature:map:compileDebugJavaWithJavac
+> Task :feature:search:bundleLibRuntimeToJarDebug
+> Task :core:network:compileDebugKotlin
+> Task :feature:map:transformDebugClassesWithAsm
+> Task :feature:map:bundleLibCompileToJarDebug
+> Task :feature:settings:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :feature:settings:generateDebugBuildConfig
+> Task :feature:settings:javaPreCompileDebug
+> Task :app:javaPreCompileDebug
+> Task :feature:map:bundleLibRuntimeToJarDebug
+> Task :app:preDebugUnitTestBuild UP-TO-DATE
+> Task :app:javaPreCompileDebugUnitTest
+> Task :core:database:processDebugJavaRes
+> Task :core:designsystem:processDebugJavaRes
+> Task :core:location:processDebugJavaRes
+> Task :feature:map:processDebugJavaRes
+> Task :feature:search:processDebugJavaRes
+> Task :app:preReleaseBuild UP-TO-DATE
+> Task :app:buildKotlinToolingMetadata
+> Task :app:generateReleaseBuildConfig
+> Task :core:database:preReleaseBuild UP-TO-DATE
+> Task :core:database:writeReleaseAarMetadata
+> Task :core:designsystem:preReleaseBuild UP-TO-DATE
+> Task :core:designsystem:writeReleaseAarMetadata
+> Task :core:location:preReleaseBuild UP-TO-DATE
+> Task :core:location:writeReleaseAarMetadata
+> Task :core:network:preReleaseBuild UP-TO-DATE
+> Task :core:network:writeReleaseAarMetadata
+> Task :feature:map:preReleaseBuild UP-TO-DATE
+> Task :feature:map:writeReleaseAarMetadata
+> Task :feature:search:preReleaseBuild UP-TO-DATE
+> Task :feature:search:writeReleaseAarMetadata
+> Task :feature:settings:preReleaseBuild UP-TO-DATE
+> Task :feature:settings:writeReleaseAarMetadata
+> Task :app:checkReleaseAarMetadata
+> Task :app:generateReleaseResValues
+> Task :core:database:generateReleaseResValues
+> Task :core:database:generateReleaseResources
+> Task :core:database:packageReleaseResources
+> Task :core:designsystem:generateReleaseResValues
+> Task :core:designsystem:generateReleaseResources
+> Task :core:designsystem:packageReleaseResources
+> Task :core:location:generateReleaseResValues
+> Task :core:location:generateReleaseResources
+> Task :core:location:packageReleaseResources
+> Task :core:network:generateReleaseResValues
+> Task :core:network:generateReleaseResources
+> Task :core:network:packageReleaseResources
+> Task :feature:map:generateReleaseResValues
+> Task :feature:map:generateReleaseResources
+> Task :feature:map:packageReleaseResources
+> Task :feature:search:generateReleaseResValues
+> Task :feature:search:generateReleaseResources
+> Task :feature:search:packageReleaseResources
+> Task :feature:settings:generateReleaseResValues
+> Task :feature:settings:generateReleaseResources
+> Task :feature:settings:packageReleaseResources
+> Task :app:mapReleaseSourceSetPaths
+> Task :app:generateReleaseResources
+> Task :app:mergeReleaseResources
+> Task :app:packageReleaseResources
+> Task :core:network:compileDebugJavaWithJavac
+> Task :core:network:processDebugJavaRes
+> Task :app:parseReleaseLocalResources
+> Task :app:createReleaseCompatibleScreenManifests
+> Task :app:extractDeepLinksRelease
+> Task :core:database:extractDeepLinksRelease
+> Task :core:network:transformDebugClassesWithAsm
+> Task :core:database:processReleaseManifest
+> Task :core:network:bundleLibRuntimeToJarDebug
+> Task :core:network:bundleLibCompileToJarDebug
+> Task :core:designsystem:extractDeepLinksRelease
+> Task :core:designsystem:processReleaseManifest
+> Task :core:location:extractDeepLinksRelease
+> Task :core:location:processReleaseManifest
+> Task :core:network:extractDeepLinksRelease
+> Task :core:network:processReleaseManifest
+> Task :feature:map:extractDeepLinksRelease
+> Task :feature:map:processReleaseManifest
+> Task :feature:search:extractDeepLinksRelease
+> Task :feature:search:processReleaseManifest
+> Task :feature:settings:extractDeepLinksRelease
+> Task :feature:settings:processReleaseManifest
+> Task :app:processReleaseMainManifest
+> Task :app:processReleaseManifest
+> Task :app:processReleaseManifestForPackage
+> Task :core:database:compileReleaseLibraryResources
+> Task :core:database:parseReleaseLocalResources
+> Task :core:database:generateReleaseRFile
+> Task :core:designsystem:compileReleaseLibraryResources
+> Task :core:designsystem:parseReleaseLocalResources
+> Task :core:designsystem:generateReleaseRFile
+> Task :core:location:compileReleaseLibraryResources
+> Task :core:location:parseReleaseLocalResources
+> Task :core:location:generateReleaseRFile
+> Task :core:network:compileReleaseLibraryResources
+> Task :core:network:parseReleaseLocalResources
+> Task :core:network:generateReleaseRFile
+> Task :feature:map:compileReleaseLibraryResources
+> Task :feature:map:parseReleaseLocalResources
+> Task :feature:map:generateReleaseRFile
+> Task :feature:search:compileReleaseLibraryResources
+> Task :feature:search:parseReleaseLocalResources
+> Task :feature:search:generateReleaseRFile
+> Task :feature:settings:compileReleaseLibraryResources
+> Task :feature:settings:parseReleaseLocalResources
+> Task :feature:settings:generateReleaseRFile
+> Task :app:processReleaseResources
+> Task :core:designsystem:generateReleaseBuildConfig
+> Task :feature:settings:kspDebugKotlin
+> Task :core:designsystem:compileReleaseKotlin
+> Task :core:designsystem:javaPreCompileRelease
+> Task :core:designsystem:compileReleaseJavaWithJavac
+> Task :core:designsystem:bundleLibCompileToJarRelease
+> Task :core:database:generateReleaseBuildConfig
+> Task :core:database:kspReleaseKotlin
+> Task :feature:settings:compileDebugKotlin
+> Task :feature:settings:compileDebugJavaWithJavac
+> Task :feature:settings:transformDebugClassesWithAsm
+> Task :feature:settings:bundleLibCompileToJarDebug
+> Task :core:database:compileReleaseKotlin
+> Task :feature:settings:bundleLibRuntimeToJarDebug
+> Task :feature:settings:processDebugJavaRes
+> Task :core:database:javaPreCompileRelease
+> Task :core:database:compileReleaseJavaWithJavac
+> Task :core:database:bundleLibCompileToJarRelease
+> Task :core:database:bundleLibRuntimeToJarRelease
+> Task :core:network:generateReleaseBuildConfig
+> Task :app:kspDebugKotlin
+> Task :core:network:kspReleaseKotlin
+> Task :app:compileDebugKotlin
+> Task :app:compileDebugJavaWithJavac
+> Task :app:hiltAggregateDepsDebug
+> Task :core:network:compileReleaseKotlin
+> Task :app:hiltJavaCompileDebug
+> Task :app:transformDebugClassesWithAsm
+> Task :app:bundleDebugClassesToRuntimeJar
+> Task :app:processDebugJavaRes
+> Task :app:bundleDebugClassesToCompileJar
+> Task :core:network:javaPreCompileRelease
+> Task :core:network:compileReleaseJavaWithJavac
+> Task :core:network:transformReleaseClassesWithAsm
+> Task :core:network:bundleLibCompileToJarRelease
+> Task :core:designsystem:bundleLibRuntimeToJarRelease
+> Task :core:location:generateReleaseBuildConfig
+> Task :app:kspDebugUnitTestKotlin
+
+> Task :core:location:compileReleaseKotlin
+w: file:///home/hatch/workspace/sela/apps/android/core/location/src/main/kotlin/id/sela/location/ForegroundLocation.kt:9:8 'class CancellationSignal : Any' is deprecated. Deprecated in Java.
+w: file:///home/hatch/workspace/sela/apps/android/core/location/src/main/kotlin/id/sela/location/ForegroundLocation.kt:28:32 'constructor(): CancellationSignal' is deprecated. Deprecated in Java.
+w: file:///home/hatch/workspace/sela/apps/android/core/location/src/main/kotlin/id/sela/location/ForegroundLocation.kt:31:39 'static fun getCurrentLocation(p0: LocationManager, p1: String, p2: CancellationSignal?, p3: Executor, p4: Consumer<Location!>): Unit' is deprecated. Deprecated in Java.
+
+> Task :core:location:javaPreCompileRelease
+> Task :core:location:compileReleaseJavaWithJavac
+> Task :core:location:bundleLibCompileToJarRelease
+> Task :core:location:bundleLibRuntimeToJarRelease
+> Task :feature:map:generateReleaseBuildConfig
+> Task :feature:search:generateReleaseBuildConfig
+> Task :app:compileDebugUnitTestKotlin
+> Task :app:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :app:hiltAggregateDepsDebugUnitTest
+> Task :app:hiltJavaCompileDebugUnitTest NO-SOURCE
+> Task :app:processDebugUnitTestJavaRes
+> Task :app:transformDebugUnitTestClassesWithAsm
+
+> Task :app:testDebugUnitTest
+Picked up JAVA_TOOL_OPTIONS:  -Djava.net.preferIPv4Stack=true
+
+> Task :feature:search:compileReleaseKotlin
+> Task :feature:search:javaPreCompileRelease
+> Task :feature:map:javaPreCompileRelease
+> Task :feature:search:compileReleaseJavaWithJavac
+> Task :feature:search:bundleLibRuntimeToJarRelease
+> Task :feature:search:bundleLibCompileToJarRelease
+> Task :core:network:bundleLibRuntimeToJarRelease
+> Task :feature:settings:generateReleaseBuildConfig
+> Task :feature:map:kspReleaseKotlin
+> Task :feature:settings:kspReleaseKotlin
+> Task :feature:settings:compileReleaseKotlin
+> Task :feature:settings:javaPreCompileRelease
+> Task :feature:settings:compileReleaseJavaWithJavac
+> Task :feature:settings:transformReleaseClassesWithAsm
+> Task :feature:settings:bundleLibCompileToJarRelease
+> Task :app:javaPreCompileRelease
+> Task :feature:settings:bundleLibRuntimeToJarRelease
+> Task :app:preReleaseUnitTestBuild UP-TO-DATE
+> Task :app:javaPreCompileReleaseUnitTest
+> Task :core:database:processReleaseJavaRes
+> Task :core:designsystem:processReleaseJavaRes
+> Task :core:location:processReleaseJavaRes
+> Task :core:network:processReleaseJavaRes
+> Task :feature:map:compileReleaseKotlin
+> Task :feature:search:processReleaseJavaRes
+> Task :feature:settings:processReleaseJavaRes
+> Task :core:database:preDebugUnitTestBuild UP-TO-DATE
+> Task :core:database:generateDebugUnitTestStubRFile
+> Task :core:database:kspDebugUnitTestKotlin
+> Task :feature:map:compileReleaseJavaWithJavac
+> Task :feature:map:transformReleaseClassesWithAsm
+> Task :feature:map:bundleLibCompileToJarRelease
+> Task :core:database:compileDebugUnitTestKotlin
+> Task :feature:map:bundleLibRuntimeToJarRelease
+> Task :feature:map:processReleaseJavaRes
+> Task :core:database:javaPreCompileDebugUnitTest
+> Task :core:database:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :core:database:processDebugUnitTestJavaRes
+
+> Task :core:database:testDebugUnitTest
+Picked up JAVA_TOOL_OPTIONS:  -Djava.net.preferIPv4Stack=true
+
+> Task :core:database:preReleaseUnitTestBuild UP-TO-DATE
+> Task :core:database:generateReleaseUnitTestStubRFile
+> Task :core:database:kspReleaseUnitTestKotlin
+> Task :app:kspReleaseKotlin
+> Task :core:database:compileReleaseUnitTestKotlin
+> Task :core:database:javaPreCompileReleaseUnitTest
+> Task :core:database:compileReleaseUnitTestJavaWithJavac NO-SOURCE
+> Task :core:database:processReleaseUnitTestJavaRes
+
+> Task :core:database:testReleaseUnitTest
+Picked up JAVA_TOOL_OPTIONS:  -Djava.net.preferIPv4Stack=true
+
+> Task :core:database:test
+> Task :core:designsystem:preDebugUnitTestBuild UP-TO-DATE
+> Task :core:designsystem:generateDebugUnitTestStubRFile
+> Task :app:compileReleaseKotlin
+> Task :app:compileReleaseJavaWithJavac
+> Task :app:hiltAggregateDepsRelease
+> Task :core:designsystem:compileDebugUnitTestKotlin
+> Task :app:hiltJavaCompileRelease
+> Task :app:processReleaseJavaRes
+> Task :app:transformReleaseClassesWithAsm
+> Task :app:bundleReleaseClassesToCompileJar
+> Task :app:bundleReleaseClassesToRuntimeJar
+> Task :core:designsystem:javaPreCompileDebugUnitTest
+> Task :core:designsystem:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :core:designsystem:processDebugUnitTestJavaRes
+
+> Task :core:designsystem:testDebugUnitTest
+Picked up JAVA_TOOL_OPTIONS:  -Djava.net.preferIPv4Stack=true
+
+> Task :core:designsystem:preReleaseUnitTestBuild UP-TO-DATE
+> Task :core:designsystem:generateReleaseUnitTestStubRFile
+> Task :app:kspReleaseUnitTestKotlin
+> Task :core:designsystem:compileReleaseUnitTestKotlin
+> Task :core:designsystem:javaPreCompileReleaseUnitTest
+> Task :core:designsystem:compileReleaseUnitTestJavaWithJavac NO-SOURCE
+> Task :core:designsystem:processReleaseUnitTestJavaRes
+
+> Task :core:designsystem:testReleaseUnitTest
+Picked up JAVA_TOOL_OPTIONS:  -Djava.net.preferIPv4Stack=true
+
+> Task :core:designsystem:test
+> Task :core:location:preDebugUnitTestBuild UP-TO-DATE
+> Task :core:location:generateDebugUnitTestStubRFile
+> Task :app:compileReleaseUnitTestKotlin
+> Task :app:compileReleaseUnitTestJavaWithJavac NO-SOURCE
+> Task :app:hiltAggregateDepsReleaseUnitTest
+> Task :app:hiltJavaCompileReleaseUnitTest NO-SOURCE
+> Task :app:processReleaseUnitTestJavaRes
+> Task :app:transformReleaseUnitTestClassesWithAsm
+
+> Task :app:testReleaseUnitTest
+Picked up JAVA_TOOL_OPTIONS:  -Djava.net.preferIPv4Stack=true
+
+> Task :app:test
+> Task :core:location:javaPreCompileDebugUnitTest
+> Task :core:location:preReleaseUnitTestBuild UP-TO-DATE
+> Task :core:location:generateReleaseUnitTestStubRFile
+> Task :core:location:compileDebugUnitTestKotlin
+> Task :core:location:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :core:location:processDebugUnitTestJavaRes
+
+> Task :core:location:testDebugUnitTest
+Picked up JAVA_TOOL_OPTIONS:  -Djava.net.preferIPv4Stack=true
+
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+
+> Task :core:location:compileReleaseUnitTestKotlin
+> Task :core:location:javaPreCompileReleaseUnitTest
+> Task :core:location:processReleaseUnitTestJavaRes
+> Task :core:location:compileReleaseUnitTestJavaWithJavac NO-SOURCE
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+
+> Task :core:location:testReleaseUnitTest
+Picked up JAVA_TOOL_OPTIONS:  -Djava.net.preferIPv4Stack=true
+
+> Task :core:location:test
+> Task :core:model:processTestResources NO-SOURCE
+> Task :core:network:preDebugUnitTestBuild UP-TO-DATE
+> Task :core:network:generateDebugUnitTestStubRFile
+> Task :core:network:kspDebugUnitTestKotlin
+> Task :core:model:compileTestKotlin
+> Task :core:model:compileTestJava NO-SOURCE
+> Task :core:model:testClasses UP-TO-DATE
+> Task :core:model:test UP-TO-DATE
+> Task :core:network:javaPreCompileDebugUnitTest
+> Task :core:network:preReleaseUnitTestBuild UP-TO-DATE
+> Task :core:network:generateReleaseUnitTestStubRFile
+> Task :core:network:kspReleaseUnitTestKotlin
+> Task :core:network:compileDebugUnitTestKotlin
+> Task :core:network:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :core:network:hiltAggregateDepsDebugUnitTest
+> Task :core:network:hiltJavaCompileDebugUnitTest NO-SOURCE
+> Task :core:network:processDebugUnitTestJavaRes
+> Task :core:network:transformDebugUnitTestClassesWithAsm
+
+> Task :core:network:testDebugUnitTest
+Picked up JAVA_TOOL_OPTIONS:  -Djava.net.preferIPv4Stack=true
+
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+
+> Task :core:network:javaPreCompileReleaseUnitTest
+> Task :feature:map:preDebugUnitTestBuild UP-TO-DATE
+> Task :feature:map:generateDebugUnitTestStubRFile
+> Task :core:network:compileReleaseUnitTestKotlin
+> Task :core:network:compileReleaseUnitTestJavaWithJavac NO-SOURCE
+> Task :core:network:hiltAggregateDepsReleaseUnitTest
+> Task :core:network:hiltJavaCompileReleaseUnitTest NO-SOURCE
+> Task :core:network:processReleaseUnitTestJavaRes
+> Task :core:network:transformReleaseUnitTestClassesWithAsm
+
+> Task :core:network:testReleaseUnitTest
+Picked up JAVA_TOOL_OPTIONS:  -Djava.net.preferIPv4Stack=true
+
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+
+> Task :feature:map:kspDebugUnitTestKotlin
+> Task :core:network:test
+> Task :feature:map:javaPreCompileDebugUnitTest
+> Task :feature:map:preReleaseUnitTestBuild UP-TO-DATE
+> Task :feature:map:generateReleaseUnitTestStubRFile
+> Task :feature:map:kspReleaseUnitTestKotlin
+> Task :feature:map:compileDebugUnitTestKotlin
+> Task :feature:map:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :feature:map:hiltAggregateDepsDebugUnitTest
+> Task :feature:map:hiltJavaCompileDebugUnitTest NO-SOURCE
+> Task :feature:map:processDebugUnitTestJavaRes
+> Task :feature:map:transformDebugUnitTestClassesWithAsm
+
+> Task :feature:map:testDebugUnitTest
+Picked up JAVA_TOOL_OPTIONS:  -Djava.net.preferIPv4Stack=true
+
+> Task :feature:map:javaPreCompileReleaseUnitTest
+> Task :feature:search:preDebugUnitTestBuild UP-TO-DATE
+> Task :feature:search:generateDebugUnitTestStubRFile
+> Task :feature:map:compileReleaseUnitTestKotlin
+> Task :feature:map:compileReleaseUnitTestJavaWithJavac NO-SOURCE
+> Task :feature:map:hiltAggregateDepsReleaseUnitTest
+> Task :feature:map:hiltJavaCompileReleaseUnitTest NO-SOURCE
+> Task :feature:map:processReleaseUnitTestJavaRes
+> Task :feature:map:transformReleaseUnitTestClassesWithAsm
+
+> Task :feature:map:testReleaseUnitTest
+Picked up JAVA_TOOL_OPTIONS:  -Djava.net.preferIPv4Stack=true
+
+> Task :feature:map:test
+> Task :feature:search:javaPreCompileDebugUnitTest
+> Task :feature:search:preReleaseUnitTestBuild UP-TO-DATE
+> Task :feature:search:generateReleaseUnitTestStubRFile
+> Task :feature:search:compileDebugUnitTestKotlin
+> Task :feature:search:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :feature:search:processDebugUnitTestJavaRes
+
+> Task :feature:search:testDebugUnitTest
+Picked up JAVA_TOOL_OPTIONS:  -Djava.net.preferIPv4Stack=true
+
+> Task :feature:search:javaPreCompileReleaseUnitTest
+> Task :feature:settings:preDebugUnitTestBuild UP-TO-DATE
+> Task :feature:settings:generateDebugUnitTestStubRFile
+> Task :feature:search:compileReleaseUnitTestKotlin
+> Task :feature:search:compileReleaseUnitTestJavaWithJavac NO-SOURCE
+> Task :feature:search:processReleaseUnitTestJavaRes
+
+> Task :feature:search:testReleaseUnitTest
+Picked up JAVA_TOOL_OPTIONS:  -Djava.net.preferIPv4Stack=true
+
+> Task :feature:search:test
+> Task :feature:settings:javaPreCompileDebugUnitTest
+> Task :feature:settings:preReleaseUnitTestBuild UP-TO-DATE
+> Task :feature:settings:generateReleaseUnitTestStubRFile
+> Task :feature:settings:kspDebugUnitTestKotlin
+> Task :feature:settings:kspReleaseUnitTestKotlin
+> Task :feature:settings:compileDebugUnitTestKotlin
+> Task :feature:settings:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :feature:settings:hiltAggregateDepsDebugUnitTest
+> Task :feature:settings:hiltJavaCompileDebugUnitTest NO-SOURCE
+> Task :feature:settings:processDebugUnitTestJavaRes
+> Task :feature:settings:transformDebugUnitTestClassesWithAsm
+
+> Task :feature:settings:testDebugUnitTest
+Picked up JAVA_TOOL_OPTIONS:  -Djava.net.preferIPv4Stack=true
+
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+
+> Task :feature:settings:compileReleaseUnitTestKotlin
+> Task :feature:settings:javaPreCompileReleaseUnitTest
+> Task :feature:settings:compileReleaseUnitTestJavaWithJavac NO-SOURCE
+> Task :feature:settings:hiltAggregateDepsReleaseUnitTest
+> Task :feature:settings:hiltJavaCompileReleaseUnitTest NO-SOURCE
+> Task :feature:settings:processReleaseUnitTestJavaRes
+> Task :feature:settings:transformReleaseUnitTestClassesWithAsm
+
+> Task :feature:settings:testReleaseUnitTest
+Picked up JAVA_TOOL_OPTIONS:  -Djava.net.preferIPv4Stack=true
+
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+
+> Task :feature:settings:test
+
+BUILD SUCCESSFUL in 10m 52s
+395 actionable tasks: 375 executed, 20 up-to-date

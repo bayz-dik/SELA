@@ -1,0 +1,78 @@
+{
+  "checks": [
+    {
+      "viewport": "375",
+      "check": "initial 5 tabs and 10 states",
+      "pass": true
+    },
+    {
+      "viewport": "375",
+      "check": "navigate map",
+      "pass": true
+    },
+    {
+      "viewport": "375",
+      "check": "route interaction",
+      "pass": true
+    },
+    {
+      "viewport": "375",
+      "check": "chat preview interaction",
+      "pass": true
+    },
+    {
+      "viewport": "375",
+      "check": "settings preview",
+      "pass": true
+    },
+    {
+      "viewport": "375",
+      "check": "mascot state selection",
+      "pass": true
+    },
+    {
+      "viewport": "375",
+      "check": "no JS errors",
+      "pass": true
+    },
+    {
+      "viewport": "1440",
+      "check": "initial 5 tabs and 10 states",
+      "pass": true
+    },
+    {
+      "viewport": "1440",
+      "check": "navigate map",
+      "pass": true
+    },
+    {
+      "viewport": "1440",
+      "check": "route interaction",
+      "pass": true
+    },
+    {
+      "viewport": "1440",
+      "check": "chat preview interaction",
+      "pass": true
+    },
+    {
+      "viewport": "1440",
+      "check": "settings preview",
+      "pass": true
+    },
+    {
+      "viewport": "1440",
+      "check": "mascot state selection",
+      "pass": true
+    },
+    {
+      "viewport": "1440",
+      "check": "no JS errors",
+      "pass": true
+    }
+  ],
+  "totals": {
+    "passed": 14,
+    "failed": 0
+  }
+}

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- App shortcuts SELA (fitur #77). Setiap shortcut membuka MainActivity
+     dengan extra "sela_action" yang ditangani di onCreate/onNewIntent (WIRING). -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="halte_terdekat"
+        android:enabled="true"
+        android:icon="@drawable/ic_stat_sela"
+        android:shortcutShortLabel="@string/shortcut_halte_terdekat"
+        android:shortcutLongLabel="@string/shortcut_halte_terdekat">
+        <intent
+            android:action="id.sela.action.SHORTCUT"
+            android:targetPackage="id.sela"
+            android:targetClass="id.sela.MainActivity">
+            <extra android:name="sela_action" android:value="halte_terdekat" />
+        </intent>
+    </shortcut>
+    <shortcut
+        android:shortcutId="favorit"
+        android:enabled="true"
+        android:icon="@drawable/ic_stat_sela"
+        android:shortcutShortLabel="@string/shortcut_favorit"
+        android:shortcutLongLabel="@string/shortcut_favorit">
+        <intent
+            android:action="id.sela.action.SHORTCUT"
+            android:targetPackage="id.sela"
+            android:targetClass="id.sela.MainActivity">
+            <extra android:name="sela_action" android:value="favorit" />
+        </intent>
+    </shortcut>
+    <shortcut
+        android:shortcutId="cari_rute"
+        android:enabled="true"
+        android:icon="@drawable/ic_stat_sela"
+        android:shortcutShortLabel="@string/shortcut_cari_rute"
+        android:shortcutLongLabel="@string/shortcut_cari_rute">
+        <intent
+            android:action="id.sela.action.SHORTCUT"
+            android:targetPackage="id.sela"
+            android:targetClass="id.sela.MainActivity">
+            <extra android:name="sela_action" android:value="cari_rute" />
+        </intent>
+    </shortcut>
+</shortcuts>

@@ -315,7 +315,7 @@ fun SosScreen(viewModel: SosViewModel = androidx.hilt.navigation.compose.hiltVie
                         color = SelaPastel.inkSoft,
                     )
                 }
-                PastelSwitch(checked = shakeEnabled, onToggle = { shakeEnabled = it })
+                PastelSwitch(checked = shakeEnabled, onToggle = { shakeEnabled = !shakeEnabled })
             }
         }
 

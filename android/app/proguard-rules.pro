@@ -31,3 +31,17 @@
 # Keep Paho MQTT (uses reflection for WebSocket)
 -keep class org.eclipse.paho.client.mqttv3.** { *; }
 -dontwarn org.eclipse.paho.**
+
+# Rhino JavaScript (NewPipe signature deciphering) — java.beans tidak dipakai di Android
+-dontwarn java.beans.**
+-dontwarn javax.swing.**
+-dontwarn org.mozilla.javascript.tools.**
+
+# Jsoup — jspecify annotations tidak dibutuhkan saat runtime
+-dontwarn org.jspecify.annotations.**
+
+# InnerTube — jangan obfuscate model serialization
+-keep class moe.rukamori.archivetune.innertube.** { *; }
+
+# Media3 session
+-keep class androidx.media3.session.** { *; }

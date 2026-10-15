@@ -23,25 +23,16 @@ jobs:
           echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
           echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
 
-      - name: Download existing keystore (reuse jika ada)
-        uses: dawidd6/action-download-artifact@v6
-        continue-on-error: true
-        with:
-          workflow: android-apk.yml
-          name: sela-keystore
-          path: android/app/
-
-      - name: Generate keystore (hanya jika belum ada)
+      - name: Generate keystore
         run: |
-          if [ ! -f "android/app/sela-release.keystore" ]; then
-            keytool -genkeypair -v \
-              -keystore android/app/sela-release.keystore \
-              -alias "${{ secrets.SELA_KEY_ALIAS }}" \
-              -keyalg RSA -keysize 2048 -validity 10000 \
-              -storepass "${{ secrets.SELA_KEYSTORE_PASSWORD }}" \
-              -keypass "${{ secrets.SELA_KEY_PASSWORD }}" \
-              -dname "CN=SELA, OU=SELA, O=SELA, L=Jakarta, ST=Jakarta, C=ID"
-          fi
+          rm -f android/app/sela-release.keystore
+          keytool -genkeypair -v \
+            -keystore android/app/sela-release.keystore \
+            -alias "${{ secrets.SELA_KEY_ALIAS }}" \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass "${{ secrets.SELA_KEYSTORE_PASSWORD }}" \
+            -keypass "${{ secrets.SELA_KEY_PASSWORD }}" \
+            -dname "CN=SELA, OU=SELA, O=SELA, L=Jakarta, ST=Jakarta, C=ID"
 
       - name: Build release APK
         run: |
@@ -58,10 +49,3 @@ jobs:
         with:
           name: sela-apk
           path: android/app/build/outputs/apk/release/*.apk
-
-      - name: Upload keystore artifact (untuk reuse build berikutnya)
-        uses: actions/upload-artifact@v4
-        with:
-          name: sela-keystore
-          path: android/app/sela-release.keystore
-          overwrite: true

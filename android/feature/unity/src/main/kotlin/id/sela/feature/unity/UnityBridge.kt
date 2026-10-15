@@ -105,10 +105,32 @@ class UnityBridge private constructor() {
             } catch (e: Exception) {
                 Log.w(TAG, "player.resume() setelah attach gagal", e)
             }
+            // Beberapa versi Unity butuh start() eksplisit.
+            try {
+                playerClass.getMethod("start").invoke(newPlayer)
+                Log.i(TAG, "UnityPlayer started setelah attach")
+            } catch (_: Exception) { /* tidak semua versi punya start() */ }
             // Pastikan view dapat fokus untuk input.
             try {
                 view.requestFocus()
             } catch (_: Exception) { }
+            // Resume lagi setelah layout valid — Unity tidak render jika view 0x0
+            // saat player dibuat (kasus umum di Compose AndroidView).
+            view.viewTreeObserver.addOnGlobalLayoutListener(
+                object : android.view.ViewTreeObserver.OnGlobalLayoutListener {
+                    override fun onGlobalLayout() {
+                        if (view.width > 0 && view.height > 0) {
+                            view.viewTreeObserver.removeOnGlobalLayoutListener(this)
+                            try {
+                                playerClass.getMethod("resume").invoke(newPlayer)
+                                Log.i(TAG, "UnityPlayer resumed setelah layout ${view.width}x${view.height}")
+                            } catch (e: Exception) {
+                                Log.w(TAG, "player.resume() setelah layout gagal", e)
+                            }
+                        }
+                    }
+                }
+            )
             scope.launch {
                 // Beri waktu boot, lalu flush antrean saat ready.
                 var tries = 0

@@ -226,9 +226,22 @@ object ChatGptAuth {
                 }
                 withContext(Dispatchers.IO) { saveTokens(tokens, issuedClientId) }
                 _authState.value = AuthState.LoggedIn
-            } catch (_: Exception) {
+            } catch (e: java.net.BindException) {
+                android.util.Log.e("ChatGptAuth", "ServerSocket bind gagal", e)
                 runCatching { server?.close() }
-                _authState.value = AuthState.Failed("Gagal membuka browser. Coba lagi ya.")
+                _authState.value = AuthState.Failed("Gagal membuka port lokal. Restart app lalu coba lagi.")
+            } catch (e: android.content.ActivityNotFoundException) {
+                android.util.Log.e("ChatGptAuth", "Browser tidak ditemukan", e)
+                runCatching { server?.close() }
+                _authState.value = AuthState.Failed("Browser tidak ditemukan. Install Chrome dulu ya.")
+            } catch (e: SecurityException) {
+                android.util.Log.e("ChatGptAuth", "Security exception saat login", e)
+                runCatching { server?.close() }
+                _authState.value = AuthState.Failed("Izin ditolak: ${e.message}")
+            } catch (e: Exception) {
+                android.util.Log.e("ChatGptAuth", "Login gagal", e)
+                runCatching { server?.close() }
+                _authState.value = AuthState.Failed("Login gagal: ${e.message ?: e.javaClass.simpleName}")
             }
         }
         return true

@@ -69,6 +69,21 @@ class UnityBridge private constructor() {
         }
     }
 
+    /**
+     * Nama class konkret UnityPlayer di Unity 6000.x.
+     *
+     * PENTING (temuan 2026-10-15, terbukti via javap pada unity-classes.jar
+     * hasil export Unity 6000.6.5f1):
+     * - `com.unity3d.player.UnityPlayer` adalah class ABSTRAK sejak Unity 2022+,
+     *   dengan constructor protected `(Context, ..., IUnityPlayerLifecycleEvents)`.
+     *   Kode lama memakai `getDeclaredConstructor(Activity::class.java)` pada
+     *   class abstrak -> NoSuchMethodException -> ditelan catch -> black screen.
+     * - Class konkret yang benar: `UnityPlayerForActivityOrService` dengan
+     *   constructor publik `(Context)`.
+     * - View didapat via `getView()` (bukan cast player ke FrameLayout).
+     */
+    private const val UNITY_PLAYER_CLASS = "com.unity3d.player.UnityPlayerForActivityOrService"
+
     /** Buat player dan tempelkan view-nya ke [container]. Idempotent. */
     fun attach(activity: Activity, container: FrameLayout) {
         if (player != null) {
@@ -77,11 +92,12 @@ class UnityBridge private constructor() {
             return
         }
         try {
-            val playerClass = Class.forName("com.unity3d.player.UnityPlayer")
-            val ctor = playerClass.getDeclaredConstructor(Activity::class.java)
+            val playerClass = Class.forName(UNITY_PLAYER_CLASS)
+            val ctor = playerClass.getConstructor(android.content.Context::class.java)
             val newPlayer = ctor.newInstance(activity)
             player = newPlayer
-            val view = newPlayer as FrameLayout
+            // getView() mengembalikan FrameLayout (com.unity3d.player.C).
+            val view = playerClass.getMethod("getView").invoke(newPlayer) as FrameLayout
             playerView = view
             container.addView(
                 view,
@@ -91,25 +107,13 @@ class UnityBridge private constructor() {
                 ),
             )
             // Unity butuh fokus window sintetis saat di-embed.
-            try {
-                playerClass.getMethod("setRunWithoutFocus", Boolean::class.java)
-                    .invoke(newPlayer, true)
-            } catch (_: Exception) { /* opsional di versi lama */ }
+            invokeOn(newPlayer, "setRunWithoutFocus", true)
             // PENTING: resume player segera setelah dibuat.
             // Activity.onResume() bisa jalan sebelum Compose membuat player,
             // sehingga invokePlayer("resume") di onResume() menjadi no-op.
             // Tanpa resume(), Unity tidak render → black screen.
-            try {
-                playerClass.getMethod("resume").invoke(newPlayer)
-                Log.i(TAG, "UnityPlayer resumed setelah attach")
-            } catch (e: Exception) {
-                Log.w(TAG, "player.resume() setelah attach gagal", e)
-            }
-            // Beberapa versi Unity butuh start() eksplisit.
-            try {
-                playerClass.getMethod("start").invoke(newPlayer)
-                Log.i(TAG, "UnityPlayer started setelah attach")
-            } catch (_: Exception) { /* tidak semua versi punya start() */ }
+            invokeOn(newPlayer, "resume")
+            Log.i(TAG, "UnityPlayer resumed setelah attach")
             // Pastikan view dapat fokus untuk input.
             try {
                 view.requestFocus()
@@ -121,12 +125,8 @@ class UnityBridge private constructor() {
                     override fun onGlobalLayout() {
                         if (view.width > 0 && view.height > 0) {
                             view.viewTreeObserver.removeOnGlobalLayoutListener(this)
-                            try {
-                                playerClass.getMethod("resume").invoke(newPlayer)
-                                Log.i(TAG, "UnityPlayer resumed setelah layout ${view.width}x${view.height}")
-                            } catch (e: Exception) {
-                                Log.w(TAG, "player.resume() setelah layout gagal", e)
-                            }
+                            invokeOn(newPlayer, "resume")
+                            Log.i(TAG, "UnityPlayer resumed setelah layout ${view.width}x${view.height}")
                         }
                     }
                 }
@@ -143,6 +143,26 @@ class UnityBridge private constructor() {
             Log.i(TAG, "UnityPlayer attached")
         } catch (e: Exception) {
             Log.e(TAG, "Gagal membuat UnityPlayer", e)
+            lastError = e.toString()
+        }
+    }
+
+    /** Error terakhir saat attach gagal — dibaca UI untuk pesan yang jelas. */
+    @Volatile
+    var lastError: String? = null
+        private set
+
+    private fun invokeOn(target: Any, method: String, vararg args: Any?) {
+        try {
+            val paramTypes = args.map {
+                when (it) {
+                    is Boolean -> Boolean::class.javaPrimitiveType!!
+                    else -> it?.javaClass ?: Any::class.java
+                }
+            }.toTypedArray()
+            target.javaClass.getMethod(method, *paramTypes).invoke(target, *args)
+        } catch (e: Exception) {
+            Log.w(TAG, "player.$method gagal", e)
         }
     }
 

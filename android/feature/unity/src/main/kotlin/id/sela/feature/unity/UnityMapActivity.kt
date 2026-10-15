@@ -137,16 +137,40 @@ private fun UnityMapScreen(
 
     Box(Modifier.fillMaxSize()) {
         if (UnityAvailability.is3dSupported(context)) {
+            var attachError by remember { mutableStateOf<String?>(null) }
             AndroidView(
                 factory = { ctx ->
                     FrameLayout(ctx).also { container ->
                         (activity as? android.app.Activity)?.let { act ->
                             bridge.attach(act, container)
+                            // Jika attach gagal (mis. constructor Unity berubah lagi),
+                            // tampilkan error-nya, jangan black screen misterius.
+                            attachError = bridge.lastError
                         }
                     }
                 },
                 modifier = Modifier.fillMaxSize(),
             )
+            attachError?.let { err ->
+                androidx.compose.foundation.layout.Column(
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Text(
+                        text = "3D gagal dimulai",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                    Text(
+                        text = err.take(300),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 8.dp),
+                    )
+                }
+            }
         } else {
             UnityUnavailableMessage(
                 reason = UnityAvailability.unsupportedReason(context),

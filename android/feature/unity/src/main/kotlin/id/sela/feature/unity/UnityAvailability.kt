@@ -16,7 +16,9 @@ object UnityAvailability {
     /** True jika unityLibrary ada di APK (Unity export sudah di-drop-in). */
     fun isUnityLibraryPresent(): Boolean {
         return try {
-            Class.forName("com.unity3d.player.UnityPlayer")
+            // Unity 6000.x: UnityPlayer abstrak; class konkretnya
+            // UnityPlayerForActivityOrService (terbukti via javap 2026-10-15).
+            Class.forName("com.unity3d.player.UnityPlayerForActivityOrService")
             true
         } catch (_: ClassNotFoundException) {
             false

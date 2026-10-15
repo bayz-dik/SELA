@@ -38,11 +38,10 @@ jobs:
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew :app:assembleRelease --no-daemon
-        env:
-          SELA_KEYSTORE_PASSWORD: ${{ secrets.SELA_KEYSTORE_PASSWORD }}
-          SELA_KEY_ALIAS: ${{ secrets.SELA_KEY_ALIAS }}
-          SELA_KEY_PASSWORD: ${{ secrets.SELA_KEY_PASSWORD }}
+          ./gradlew :app:assembleRelease --no-daemon \
+            -Psela.keystore.password="${{ secrets.SELA_KEYSTORE_PASSWORD }}" \
+            -Psela.key.alias="${{ secrets.SELA_KEY_ALIAS }}" \
+            -Psela.key.password="${{ secrets.SELA_KEY_PASSWORD }}"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4

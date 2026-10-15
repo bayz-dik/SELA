@@ -8,6 +8,7 @@ import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
+import android.util.Log
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -21,6 +22,7 @@ import id.sela.designsystem.color
 import androidx.compose.ui.graphics.toArgb
 import id.sela.model.*
 import id.sela.feature.search.filterStops
+import kotlinx.coroutines.delay
 import org.maplibre.android.MapLibre
 import org.maplibre.android.annotations.*
 import org.maplibre.android.camera.CameraUpdateFactory
@@ -29,6 +31,18 @@ import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.MapView
 import org.maplibre.android.maps.Style
+
+private const val TAG = "SelaMap"
+/**
+ * B24: batas tunggu style selesai dimuat (sukses/gagal) sebelum percobaan
+ * dianggap gagal — menangani jaringan macet yang tak memicu callback apa pun.
+ */
+private const val STYLE_LOAD_TIMEOUT_MS = 20_000L
+/**
+ * B24: batas tunggu frame peta ter-render penuh setelah style siap —
+ * menangani tile yang gagal diam-diam (tak memicu OnDidFailLoadingMap).
+ */
+private const val FIRST_FRAME_TIMEOUT_MS = 25_000L
 
 @OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
 @Composable
@@ -51,13 +65,106 @@ fun MapCanvas(state: MapUiState, styleUrl: String, modifier: Modifier = Modifier
     val boundsCallback by rememberUpdatedState(onBounds)
     val errorCallback by rememberUpdatedState(onError)
     val gestureCallback by rememberUpdatedState(onManualGesture)
+    val requestRef = rememberUpdatedState(styleUrl)
     val mapView = remember(context) { MapLibre.getInstance(context); MapView(context).apply { onCreate(null) } }
     var map by remember { mutableStateOf<MapLibreMap?>(null) }
+    val mapRef = rememberUpdatedState(map)
     var styleReady by remember { mutableStateOf(false) }
     // B20: epoch naik tiap style selesai diganti — efek anotasi di-key padanya
     // agar dibuat ulang, aman baik anotasi bertahan maupun hancur saat ganti style.
     var styleEpoch by remember { mutableStateOf(0) }
-    var appliedStyle by remember { mutableStateOf<String?>(null) }
+    // B24: styleUrl yang rantainya sudah berhasil dimuat (pada index berapa pun).
+    var appliedRequest by remember { mutableStateOf<String?>(null) }
+    // B24: rantai fallback style — gelap → terang; satelit tanpa fallback.
+    val styleChain = remember(styleUrl) { styleFallbackChain(styleUrl) }
+    val chainRef = rememberUpdatedState(styleChain)
+    var chainIndex by remember { mutableStateOf(0) }
+    var stylePending by remember { mutableStateOf(false) }
+    var awaitingFrame by remember { mutableStateOf(false) }
+    var styleToken by remember { mutableStateOf(0) }
+    var frameToken by remember { mutableStateOf(0) }
+    val destroyedRef = remember { mutableStateOf(false) }
+
+    /**
+     * B24: muat style pada [index] rantai fallback. Dipakai saat init, saat
+     * user ganti style manual, dan saat fallback otomatis.
+     */
+    val loadStyleAt = remember {
+        { nativeMap: MapLibreMap, index: Int ->
+            val chain = chainRef.value
+            if (!destroyedRef.value && index in chain.indices) {
+                val requested = requestRef.value
+                chainIndex = index
+                stylePending = true
+                awaitingFrame = false
+                styleToken++
+                Log.i(TAG, "Memuat style peta (percobaan ${index + 1}/${chain.size})")
+                applyMapStyle(nativeMap, chain[index]) {
+                    // Abaikan callback basi — user sudah meminta style lain
+                    // atau MapView sudah diganti/dihancurkan.
+                    if (destroyedRef.value || mapRef.value !== nativeMap ||
+                        requestRef.value != requested
+                    ) return@applyMapStyle
+                    stylePending = false
+                    awaitingFrame = true
+                    frameToken++
+                    val first = !styleReady
+                    styleReady = true
+                    // B20: bangun ulang anotasi tiap style selesai dimuat.
+                    if (!first) styleEpoch++
+                    appliedRequest = requested
+                    Log.i(TAG, "Style peta percobaan ${index + 1}/${chain.size} berhasil dimuat")
+                    nativeMap.projection.visibleRegion.latLngBounds.let {
+                        boundsCallback(VisibleBounds(it.latitudeSouth, it.longitudeWest, it.latitudeNorth, it.longitudeEast))
+                    }
+                }
+            }
+        }
+    }
+    /**
+     * B24: satu percobaan style gagal (error native / timeout watchdog).
+     * Maju ke fallback berikut; bila rantai habis, tampilkan pesan yang
+     * jelas ke user — bukan peta hitam misterius.
+     */
+    val failStyleAttempt = remember {
+        { reason: String ->
+            if (!destroyedRef.value && (stylePending || awaitingFrame)) {
+                stylePending = false
+                awaitingFrame = false
+                val chain = chainRef.value
+                val next = chainIndex + 1
+                if (next < chain.size) {
+                    Log.w(TAG, "Style ${chainIndex + 1}/${chain.size} gagal ($reason) — coba fallback ${next + 1}/${chain.size}")
+                    mapRef.value?.let { loadStyleAt(it, next) }
+                } else {
+                    Log.e(TAG, "Semua ${chain.size} style peta gagal dimuat. Alasan terakhir: $reason")
+                    errorCallback(
+                        "Peta tidak dapat dimuat. Periksa koneksi internet, lalu ganti " +
+                            "mode peta (gelap/satelit) untuk mencoba lagi. " +
+                            "Daftar halte dan rute tetap dapat dibuka."
+                    )
+                }
+            }
+        }
+    }
+    // B24: watchdog style — jaringan macet tanpa callback sukses/gagal.
+    LaunchedEffect(styleToken) {
+        if (styleToken == 0 || destroyedRef.value) return@LaunchedEffect
+        delay(STYLE_LOAD_TIMEOUT_MS)
+        if (!destroyedRef.value && stylePending) {
+            Log.w(TAG, "Timeout ${STYLE_LOAD_TIMEOUT_MS}ms menunggu style peta")
+            failStyleAttempt("timeout ${STYLE_LOAD_TIMEOUT_MS}ms tanpa respons")
+        }
+    }
+    // B24: watchdog frame — style OK tapi tile tak kunjung tampil penuh.
+    LaunchedEffect(frameToken) {
+        if (frameToken == 0 || destroyedRef.value) return@LaunchedEffect
+        delay(FIRST_FRAME_TIMEOUT_MS)
+        if (!destroyedRef.value && awaitingFrame) {
+            Log.w(TAG, "Timeout ${FIRST_FRAME_TIMEOUT_MS}ms menunggu tile peta tampil")
+            failStyleAttempt("timeout ${FIRST_FRAME_TIMEOUT_MS}ms menunggu tile tampil")
+        }
+    }
     val userDot = remember(context) { userDotIcon(context) }
     val userMarkers = remember { mutableMapOf<String, Marker>() }
     val markerIds = remember { mutableMapOf<Long, Pair<String, String>>() }
@@ -69,18 +176,19 @@ fun MapCanvas(state: MapUiState, styleUrl: String, modifier: Modifier = Modifier
     val routeColor = routes[state.selectedId]?.displayServiceType?.color()?.toArgb() ?: SelaPalette.volt.toArgb()
     val initialCamera = remember { state.camera }
     DisposableEffect(mapView, lifecycle) {
+        // Efek baru = mapView baru/hidup lagi (pengganti `var destroyed` lokal).
+        destroyedRef.value = false
         var started = false
         var resumed = false
-        var destroyed = false
         fun stop() {
             if (resumed) { mapView.onPause(); resumed = false }
             if (started) { mapView.onStop(); started = false }
         }
-        fun destroy() { if (!destroyed) { stop(); mapView.onDestroy(); destroyed = true } }
+        fun destroy() { if (!destroyedRef.value) { stop(); mapView.onDestroy(); destroyedRef.value = true } }
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
-                Lifecycle.Event.ON_START -> if (!started && !destroyed) { mapView.onStart(); started = true }
-                Lifecycle.Event.ON_RESUME -> if (!resumed && !destroyed) { mapView.onResume(); resumed = true }
+                Lifecycle.Event.ON_START -> if (!started && !destroyedRef.value) { mapView.onStart(); started = true }
+                Lifecycle.Event.ON_RESUME -> if (!resumed && !destroyedRef.value) { mapView.onResume(); resumed = true }
                 Lifecycle.Event.ON_PAUSE -> if (resumed) { mapView.onPause(); resumed = false }
                 Lifecycle.Event.ON_STOP -> stop()
                 Lifecycle.Event.ON_DESTROY -> destroy()
@@ -89,13 +197,26 @@ fun MapCanvas(state: MapUiState, styleUrl: String, modifier: Modifier = Modifier
         }
         val memory = object : ComponentCallbacks2 {
             override fun onConfigurationChanged(newConfig: Configuration) = Unit
-            override fun onLowMemory() { if (!destroyed) mapView.onLowMemory() }
+            override fun onLowMemory() { if (!destroyedRef.value) mapView.onLowMemory() }
             override fun onTrimMemory(level: Int) { if (level >= ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW) onLowMemory() }
         }
         context.registerComponentCallbacks(memory)
-        mapView.addOnDidFailLoadingMapListener { _ -> if (!destroyed) errorCallback("Peta belum dapat dimuat. Periksa koneksi internet. Daftar halte dan rute tetap dapat dibuka.") }
+        // B24: catat alasan ASLI ke logcat (dulu dibuang), lalu fallback berlapis.
+        // onDidFailLoadingMap hanya untuk kegagalan level style/map
+        // (StyleParseError/StyleLoadError/NotFoundError) — bukan tile satuan.
+        mapView.addOnDidFailLoadingMapListener { reason ->
+            Log.e(TAG, "Peta gagal dimuat: $reason")
+            failStyleAttempt("OnDidFailLoadingMap: $reason")
+        }
+        // B24: frame penuh pertama = peta benar-benar tampil, bukan hitam.
+        mapView.addOnDidFinishRenderingFrameListener { fully, _, _ ->
+            if (fully && !destroyedRef.value && awaitingFrame) {
+                awaitingFrame = false
+                Log.i(TAG, "Frame peta ter-render penuh — peta tampil")
+            }
+        }
         mapView.getMapAsync { nativeMap ->
-            if (!destroyed) {
+            if (!destroyedRef.value) {
                 map = nativeMap
                 nativeMap.cameraPosition = CameraPosition.Builder().target(LatLng(initialCamera.lat, initialCamera.lon)).zoom(initialCamera.zoom).build()
                 nativeMap.uiSettings.isAttributionEnabled = true
@@ -103,19 +224,15 @@ fun MapCanvas(state: MapUiState, styleUrl: String, modifier: Modifier = Modifier
                 nativeMap.setOnMarkerClickListener { marker -> markerIds[marker.id]?.let { selection(it.first, it.second) }; true }
                 // 3D Ultra: gesture manual (API_GESTURE) membatalkan mode Follow → Free (§7/§21).
                 nativeMap.addOnCameraMoveStartedListener { reason ->
-                    if (!destroyed && reason == MapLibreMap.OnCameraMoveStartedListener.REASON_API_GESTURE) {
+                    if (!destroyedRef.value && reason == MapLibreMap.OnCameraMoveStartedListener.REASON_API_GESTURE) {
                         gestureCallback()
                     }
                 }
                 nativeMap.addOnCameraIdleListener {
                     nativeMap.projection.visibleRegion.latLngBounds.let { boundsCallback(VisibleBounds(it.latitudeSouth, it.longitudeWest, it.latitudeNorth, it.longitudeEast)) }
-                    if (!destroyed) nativeMap.cameraPosition.let { position -> position.target?.let { cameraCallback(MapCamera(it.latitude, it.longitude, position.zoom, position.tilt, position.bearing)) } }
+                    if (!destroyedRef.value) nativeMap.cameraPosition.let { position -> position.target?.let { cameraCallback(MapCamera(it.latitude, it.longitude, position.zoom, position.tilt, position.bearing)) } }
                 }
-                applyMapStyle(nativeMap, styleUrl) { if (!destroyed) {
-                    appliedStyle = styleUrl
-                    styleReady = true
-                    nativeMap.projection.visibleRegion.latLngBounds.let { boundsCallback(VisibleBounds(it.latitudeSouth, it.longitudeWest, it.latitudeNorth, it.longitudeEast)) }
-                } }
+                loadStyleAt(nativeMap, 0)
             }
         }
         lifecycle.addObserver(observer)
@@ -131,16 +248,11 @@ fun MapCanvas(state: MapUiState, styleUrl: String, modifier: Modifier = Modifier
         }
     }
     // B20: ganti style gelap ↔ satelit tanpa membuat ulang MapView.
-    LaunchedEffect(map, styleUrl, styleReady) {
+    // B24: tiap styleUrl baru mulai dari index 0 rantai fallback-nya.
+    LaunchedEffect(map, styleChain) {
         val nativeMap = map ?: return@LaunchedEffect
-        if (!styleReady || appliedStyle == styleUrl) return@LaunchedEffect
-        appliedStyle = styleUrl
-        applyMapStyle(nativeMap, styleUrl) {
-            styleEpoch++
-            nativeMap.projection.visibleRegion.latLngBounds.let {
-                boundsCallback(VisibleBounds(it.latitudeSouth, it.longitudeWest, it.latitudeNorth, it.longitudeEast))
-            }
-        }
+        if (!styleReady || appliedRequest == styleUrl) return@LaunchedEffect
+        loadStyleAt(nativeMap, 0)
     }
     // B21: titik biru #4285f4 posisi user — hanya tampil saat follow mode aktif.
     // Sengaja tidak didaftarkan ke markerIds: ketuk titik biru = no-op.

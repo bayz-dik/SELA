@@ -38,33 +38,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 
-/** Style peta gelap OpenFreeMap — selaras tema Malam Kota. */
-private const val SELA_MAP_STYLE = "https://tiles.openfreemap.org/styles/dark"
-
-/**
- * B20: style satelit — tile raster gratis ESRI World Imagery.
- * MapLibre butuh objek style penuh (bukan tile URL mentah), jadi dibungkus
- * JSON inline. Atribusi Esri tampil via uiSettings.isAttributionEnabled.
- */
-private const val SELA_SATELLITE_STYLE = """
-{
-  "version": 8,
-  "name": "SELA Satelit",
-  "sources": {
-    "esri-imagery": {
-      "type": "raster",
-      "tiles": ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
-      "tileSize": 256,
-      "maxzoom": 19,
-      "attribution": "Imagery © Esri, Maxar, Earthstar Geographics"
-    }
-  },
-  "layers": [
-    { "id": "esri-imagery", "type": "raster", "source": "esri-imagery", "minzoom": 0, "maxzoom": 22 }
-  ]
-}
-"""
-
 /** B21: follow mode 2D (port dari web) — snap ke bus terdekat dalam radius ini. */
 private const val FOLLOW_SNAP_METERS = 30.0
 /** B21: follow mode 2D — lepas snap bus bila jarak user↔bus melebihi ini. */

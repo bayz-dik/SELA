@@ -1,27 +1,37 @@
 package id.sela.assistant
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -32,12 +42,103 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import id.sela.designsystem.PastelNoticeBanner
+import id.sela.designsystem.PastelNoticeTone
+import id.sela.designsystem.PastelTextButton
+import id.sela.designsystem.SelaButton
+import id.sela.designsystem.SelaButtonStyle
+import id.sela.designsystem.SelaMascot
+import id.sela.designsystem.SelaMascotExpression
+import id.sela.designsystem.SelaPastel
+import id.sela.designsystem.SelaPastelGradients
+import id.sela.designsystem.SelaPastelShadows
+import id.sela.designsystem.SelaPastelShapes
+import id.sela.designsystem.auroraBackground
+import id.sela.designsystem.pastelShadow
 import kotlinx.coroutines.launch
 
 /** Satu baris chat di layar kondektur. */
 data class ChatMsg(val text: String, val fromUser: Boolean)
+
+/** Gelembung chat pastel — user = aurora kanan, Sela = putih kiri + maskot. */
+@Composable
+private fun ChatBubble(msg: ChatMsg) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = if (msg.fromUser) Arrangement.End else Arrangement.Start,
+        verticalAlignment = Alignment.Top,
+    ) {
+        if (!msg.fromUser) {
+            SelaMascot(
+                expression = SelaMascotExpression.Happy,
+                diameter = 36.dp,
+                bodyColor = SelaPastel.mint,
+                animate = false,
+            )
+            Spacer(Modifier.width(8.dp))
+        }
+        val bubbleShape = if (msg.fromUser) {
+            RoundedCornerShape(20.dp, 4.dp, 20.dp, 20.dp)
+        } else {
+            RoundedCornerShape(4.dp, 20.dp, 20.dp, 20.dp)
+        }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(0.82f)
+                .pastelShadow(elevation = SelaPastelShadows.soft, shape = bubbleShape)
+                .clip(bubbleShape)
+                .background(
+                    if (msg.fromUser) SelaPastelGradients.auroraBlueLavender
+                    else Brush.linearGradient(listOf(Color.White, Color.White)),
+                )
+                .padding(14.dp),
+        ) {
+            Text(
+                if (msg.fromUser) msg.text else "🚏 ${msg.text}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = SelaPastel.ink,
+            )
+        }
+    }
+}
+
+/** Gelembung "Sela lagi mikir" — maskot Thinking berdenyut. */
+@Composable
+private fun ThinkingBubble() {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.Start,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        SelaMascot(
+            expression = SelaMascotExpression.Thinking,
+            diameter = 44.dp,
+            bodyColor = SelaPastel.lavender,
+        )
+        Spacer(Modifier.width(8.dp))
+        Surface(
+            shape = RoundedCornerShape(4.dp, 20.dp, 20.dp, 20.dp),
+            color = Color.White.copy(alpha = 0.9f),
+            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.7f)),
+            modifier = Modifier.pastelShadow(
+                elevation = SelaPastelShadows.soft,
+                shape = RoundedCornerShape(4.dp, 20.dp, 20.dp, 20.dp),
+            ),
+        ) {
+            Text(
+                "Sela lagi mikir…",
+                style = MaterialTheme.typography.bodyMedium,
+                color = SelaPastel.inkSoft,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            )
+        }
+    }
+}
 
 /**
  * Layar chat kondektur SELA.
@@ -71,18 +172,64 @@ fun KonduktorScreen(ctx: KonduktorCtx = KonduktorCtx()) {
         if (messages.isNotEmpty()) listState.animateScrollToItem(messages.size - 1)
     }
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text("Kondektur SELA", style = MaterialTheme.typography.headlineSmall)
-        Text(
-            "Mode offline selalu jalan. Login ChatGPT untuk jawaban AI.",
-            style = MaterialTheme.typography.bodySmall,
-        )
+    fun sendOffline() {
+        val text = draft.trim()
+        if (text.isEmpty()) return
+        messages = messages + ChatMsg(text, fromUser = true) +
+            ChatMsg(KonduktorAi.reply(text, ctx), fromUser = false)
+        draft = ""
+    }
+
+    fun askAi() {
+        val text = draft.trim()
+        if (text.isEmpty() || sending) return
+        sending = true
+        scope.launch {
+            messages = messages + ChatMsg(text, fromUser = true)
+            draft = ""
+            val reply = when (val r = SelaAiClient.ask(text, selectedModel)) {
+                is SelaAiClient.AiResult.Ok -> r.text
+                is SelaAiClient.AiResult.NeedLogin ->
+                    "Sesi ChatGPT berakhir. Login ulang ya."
+                is SelaAiClient.AiResult.Error -> r.message
+            }
+            messages = messages + ChatMsg(reply, fromUser = false)
+            sending = false
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .auroraBackground()
+            .padding(16.dp),
+    ) {
+        // Kepala — maskot + judul
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            SelaMascot(
+                expression = SelaMascotExpression.Happy,
+                diameter = 56.dp,
+                bodyColor = SelaPastel.mint,
+            )
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text("Kondektur SELA", style = MaterialTheme.typography.headlineSmall, color = SelaPastel.ink)
+                Text(
+                    "Mode offline selalu jalan. Login ChatGPT untuk jawaban AI.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = SelaPastel.inkSoft,
+                )
+            }
+        }
+
         // Pemilih model AI ala ChatGPT — langsung di atas chat
         if (authState is ChatGptAuth.AuthState.LoggedIn) {
             ExposedDropdownMenuBox(
                 expanded = modelMenuOpen,
                 onExpandedChange = { modelMenuOpen = !modelMenuOpen },
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
             ) {
                 OutlinedTextField(
                     value = selectedModel,
@@ -92,6 +239,15 @@ fun KonduktorScreen(ctx: KonduktorCtx = KonduktorCtx()) {
                     trailingIcon = {
                         ExposedDropdownMenuDefaults.TrailingIcon(expanded = modelMenuOpen)
                     },
+                    shape = SelaPastelShapes.field,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = SelaPastel.lavenderDeep,
+                        unfocusedBorderColor = SelaPastel.hairline,
+                        focusedLabelColor = SelaPastel.lavenderDeep,
+                        unfocusedLabelColor = SelaPastel.inkSoft,
+                        focusedContainerColor = Color.White,
+                        unfocusedContainerColor = Color.White,
+                    ),
                     modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable)
                         .fillMaxWidth(),
                 )
@@ -101,7 +257,7 @@ fun KonduktorScreen(ctx: KonduktorCtx = KonduktorCtx()) {
                 ) {
                     SelaAiClient.MODELS.forEach { model ->
                         DropdownMenuItem(
-                            text = { Text(model) },
+                            text = { Text(model, color = SelaPastel.ink) },
                             onClick = {
                                 selectedModel = model
                                 modelMenuOpen = false
@@ -111,117 +267,105 @@ fun KonduktorScreen(ctx: KonduktorCtx = KonduktorCtx()) {
                 }
             }
         }
+
         LazyColumn(
             state = listState,
-            modifier = Modifier.fillMaxWidth().weight(1f).padding(vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth().weight(1f).padding(vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             items(messages) { msg ->
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = if (msg.fromUser) {
-                        Arrangement.End
-                    } else {
-                        Arrangement.Start
-                    },
-                ) {
-                    Card(
-                        colors = CardDefaults.cardColors(
-                            containerColor = if (msg.fromUser) {
-                                MaterialTheme.colorScheme.primaryContainer
-                            } else {
-                                MaterialTheme.colorScheme.surfaceVariant
-                            },
-                        ),
-                        modifier = Modifier.fillMaxWidth(0.85f),
-                    ) {
-                        Text(
-                            if (msg.fromUser) msg.text else "🚏 ${msg.text}",
-                            modifier = Modifier.padding(12.dp),
-                        )
-                    }
-                }
+                ChatBubble(msg)
+            }
+            if (sending) {
+                item { ThinkingBubble() }
             }
         }
+
+        // Kolom input pastel + tombol kirim aurora
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            TextField(
+            OutlinedTextField(
                 value = draft,
                 onValueChange = { draft = it },
                 modifier = Modifier.weight(1f),
                 placeholder = { Text("Tanya soal bus / halte...") },
                 singleLine = true,
+                shape = SelaPastelShapes.pill,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = SelaPastel.blueDeep,
+                    unfocusedBorderColor = SelaPastel.hairline,
+                    cursorColor = SelaPastel.blueDeep,
+                    focusedContainerColor = Color.White,
+                    unfocusedContainerColor = Color.White,
+                ),
             )
-            Button(
-                onClick = {
-                    val text = draft.trim()
-                    if (text.isEmpty()) return@Button
-                    messages = messages + ChatMsg(text, fromUser = true) +
-                        ChatMsg(KonduktorAi.reply(text, ctx), fromUser = false)
-                    draft = ""
-                },
+            Surface(
+                onClick = ::sendOffline,
+                shape = CircleShape,
+                modifier = Modifier
+                    .size(54.dp)
+                    .pastelShadow(elevation = SelaPastelShadows.card, shape = CircleShape),
             ) {
-                Text("Kirim")
+                Box(
+                    modifier = Modifier.background(SelaPastelGradients.auroraBlueLavender),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        Icons.Default.Send,
+                        contentDescription = "Kirim",
+                        tint = SelaPastel.ink,
+                        modifier = Modifier.size(22.dp),
+                    )
+                }
             }
         }
 
         when (val s = authState) {
             is ChatGptAuth.AuthState.LoggedIn -> {
                 // Tombol "Tanya Sela" — AI via ChatGPT langsung dari HP
-                Button(
-                    onClick = {
-                        val text = draft.trim()
-                        if (text.isEmpty() || sending) return@Button
-                        sending = true
-                        scope.launch {
-                            messages = messages + ChatMsg(text, fromUser = true)
-                            draft = ""
-                            val reply = when (val r = SelaAiClient.ask(text, selectedModel)) {
-                                is SelaAiClient.AiResult.Ok -> r.text
-                                is SelaAiClient.AiResult.NeedLogin ->
-                                    "Sesi ChatGPT berakhir. Login ulang ya."
-                                is SelaAiClient.AiResult.Error -> r.message
-                            }
-                            messages = messages + ChatMsg(reply, fromUser = false)
-                            sending = false
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                SelaButton(
+                    text = if (sending) "Sela mikir..." else "🤖 Tanya Sela",
+                    onClick = ::askAi,
+                    style = SelaButtonStyle.Primary,
                     enabled = !sending,
+                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                )
+                Row(
+                    Modifier.fillMaxWidth().padding(top = 4.dp),
+                    horizontalArrangement = Arrangement.Center,
                 ) {
-                    Text(if (sending) "Sela mikir..." else "🤖 Tanya Sela")
-                }
-                OutlinedButton(
-                    onClick = {
-                        ChatGptAuth.logout()
-                        messages = messages + ChatMsg(
-                            "Kamu keluar dari ChatGPT. Mode offline tetap jalan.",
-                            fromUser = false,
-                        )
-                    },
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                ) {
-                    Text("Keluar dari ChatGPT")
+                    PastelTextButton(
+                        text = "Keluar dari ChatGPT",
+                        onClick = {
+                            ChatGptAuth.logout()
+                            messages = messages + ChatMsg(
+                                "Kamu keluar dari ChatGPT. Mode offline tetap jalan.",
+                                fromUser = false,
+                            )
+                        },
+                    )
                 }
             }
             is ChatGptAuth.AuthState.WaitingBrowser -> {
-                Text(
-                    "Selesaikan login di browser, lalu kembali ke sini ya.",
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.padding(top = 8.dp),
+                PastelNoticeBanner(
+                    text = "Selesaikan login di browser, lalu kembali ke sini ya.",
+                    icon = Icons.Default.Info,
+                    tone = PastelNoticeTone.NEUTRAL,
+                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
                 )
             }
             is ChatGptAuth.AuthState.Failed -> {
                 Text(
                     s.message,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.padding(top = 8.dp),
+                    color = SelaPastel.dangerDeep,
+                    modifier = Modifier.padding(top = 12.dp),
                 )
-                OutlinedButton(
+                SelaButton(
+                    text = "Coba login lagi",
                     onClick = {
                         if (!ChatGptAuth.beginLogin(context)) {
                             scope.launch {
@@ -232,13 +376,15 @@ fun KonduktorScreen(ctx: KonduktorCtx = KonduktorCtx()) {
                             }
                         }
                     },
+                    style = SelaButtonStyle.Soft,
+                    accent = SelaPastel.danger,
+                    onAccent = SelaPastel.dangerDeep,
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                ) {
-                    Text("Coba login lagi")
-                }
+                )
             }
             is ChatGptAuth.AuthState.LoggedOut -> {
-                OutlinedButton(
+                SelaButton(
+                    text = "🔑 Login ChatGPT untuk AI",
                     onClick = {
                         if (!ChatGptAuth.beginLogin(context)) {
                             scope.launch {
@@ -249,11 +395,11 @@ fun KonduktorScreen(ctx: KonduktorCtx = KonduktorCtx()) {
                             }
                         }
                     },
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                ) {
-                    Text("🔑 Login ChatGPT untuk AI")
-                }
+                    style = SelaButtonStyle.Primary,
+                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                )
             }
         }
+        Spacer(Modifier.height(4.dp))
     }
 }

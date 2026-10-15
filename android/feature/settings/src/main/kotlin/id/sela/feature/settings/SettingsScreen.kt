@@ -292,10 +292,61 @@ private fun formatBytes(bytes: Long): String = when {
     else -> String.format(Locale("id"), "%.1f MB", bytes / 1048576.0)
 }
 
+
 // ---------------------------------------------------------------------------
-// Layar Pengaturan — gaya Malam Kota
+// Layar Pengaturan — gaya Pagi Cerah (pastel)
 // ---------------------------------------------------------------------------
 
+/** Sakelar pastel — trek mint saat aktif. */
+@Composable
+private fun PastelSwitch(checked: Boolean, onToggle: () -> Unit) {
+    Switch(
+        checked = checked,
+        onCheckedChange = { onToggle() },
+        colors = SwitchDefaults.colors(
+            checkedThumbColor = Color.White,
+            checkedTrackColor = SelaPastel.mintDeep,
+            checkedBorderColor = Color.Transparent,
+            uncheckedThumbColor = Color.White,
+            uncheckedTrackColor = SelaPastel.hairline,
+            uncheckedBorderColor = SelaPastel.hairline,
+        ),
+    )
+}
+
+/** Baris judul + deskripsi + sakelar pastel. */
+@Composable
+private fun ToggleRow(title: String, desc: String, checked: Boolean, onToggle: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(title, style = MaterialTheme.typography.titleSmall, color = SelaPastel.ink)
+            Text(
+                desc,
+                style = MaterialTheme.typography.bodySmall,
+                color = SelaPastel.inkSoft,
+            )
+        }
+        PastelSwitch(checked = checked, onToggle = onToggle)
+    }
+}
+
+/** Warna kolom teks pastel — dipakai semua OutlinedTextField di layar ini. */
+@Composable
+private fun pastelFieldColors() = OutlinedTextFieldDefaults.colors(
+    focusedBorderColor = SelaPastel.blueDeep,
+    unfocusedBorderColor = SelaPastel.hairline,
+    focusedLabelColor = SelaPastel.blueDeep,
+    unfocusedLabelColor = SelaPastel.inkSoft,
+    cursorColor = SelaPastel.blueDeep,
+    focusedContainerColor = Color.White,
+    unfocusedContainerColor = Color.White,
+)
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel(),
@@ -311,9 +362,16 @@ fun SettingsScreen(
             if (f.exists()) formatBytes(f.length()) else "—"
         }.getOrDefault("—")
     }
+    val segColors = SegmentedButtonDefaults.colors(
+        activeContainerColor = SelaPastel.blueSoft,
+        activeContentColor = SelaPastel.blueDeep,
+        inactiveContainerColor = Color.White,
+        inactiveContentColor = SelaPastel.inkSoft,
+    )
     Column(
         Modifier
             .fillMaxSize()
+            .background(SelaPastel.background)
             .statusBarsPadding()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 16.dp, vertical = 12.dp),
@@ -329,194 +387,209 @@ fun SettingsScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
-                    "Pengaturan",
-                    style = MaterialTheme.typography.headlineMedium,
-                    modifier = Modifier.semantics { heading() },
-                )
-                SelaRouteBadge("SELA 0.4.0", SelaPalette.volt)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    SelaMascot(
+                        expression = SelaMascotExpression.Happy,
+                        diameter = 52.dp,
+                        bodyColor = SelaPastel.lavender,
+                        animate = false,
+                    )
+                    Text(
+                        "Pengaturan",
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = SelaPastel.ink,
+                        modifier = Modifier.semantics { heading() },
+                    )
+                }
+                PastelRouteBadge("SELA 0.4.0", tint = SelaPastel.lavender, deep = SelaPastel.lavenderDeep)
             }
 
             state.message?.let { msg ->
-                SelaNoticeBanner(
+                PastelNoticeBanner(
                     text = msg,
                     icon = Icons.Default.Info,
-                    tone = SelaNoticeTone.NEUTRAL,
+                    tone = PastelNoticeTone.NEUTRAL,
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
 
             // Cuaca + transit (#69)
             state.weatherAdvice?.let { advice ->
-                SelaCard {
-                    SelaSectionTitle("Cuaca")
+                PastelCard(tint = SelaPastel.blueSoft, shadowTint = SelaPastel.blueDeep) {
+                    PastelSectionTitle("Cuaca")
                     Text(
                         advice,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = SelaPastel.inkSoft,
                     )
                 }
             }
 
             // Tentang
-            SelaCard {
-                SelaSectionTitle("Tentang SELA")
+            PastelCard(tint = SelaPastel.lavenderSoft, shadowTint = SelaPastel.lavenderDeep) {
+                PastelSectionTitle("Tentang SELA")
                 Text(
                     "SELA berjalan mandiri tanpa server. Halte & rute dari data bawaan aplikasi (bisa diperbarui manual di bawah). Posisi bus live langsung dari broker TransJakarta via MQTT; hanya muncul saat online dan dihapus dari peta setelah 90 detik tanpa pembaruan.",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = SelaPastel.inkSoft,
                 )
             }
 
             // Statistik perjalanan — kartu bento
-            SelaCard {
-                SelaSectionTitle("Perjalananmu")
+            PastelCard(tint = SelaPastel.mintSoft, shadowTint = SelaPastel.mintDeep) {
+                PastelSectionTitle("Perjalananmu")
                 val stats = state.stats
-                Row(
-                    Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    SelaStatCard(
-                        value = "${stats.tripsThisWeek}x",
-                        label = "Minggu ini",
-                        icon = Icons.Default.DirectionsBus,
-                        accent = true,
-                        modifier = Modifier.weight(1f),
-                    )
-                    SelaStatCard(
-                        value = stats.topRouteName?.take(12) ?: "—",
-                        label = "Rute tersering",
-                        icon = Icons.Default.Route,
-                        modifier = Modifier.weight(1f),
-                    )
-                    SelaStatCard(
-                        value = stats.topStopName?.take(12) ?: "—",
-                        label = "Halte tersering",
-                        icon = Icons.Default.LocationOn,
-                        modifier = Modifier.weight(1f),
-                    )
+                BentoGrid(columns = 3) {
+                    cell {
+                        PastelStatCell(
+                            value = "${stats.tripsThisWeek}x",
+                            label = "Minggu ini",
+                            icon = Icons.Default.DirectionsBus,
+                            tint = SelaPastel.blueSoft,
+                            deep = SelaPastel.blueDeep,
+                        )
+                    }
+                    cell {
+                        PastelStatCell(
+                            value = stats.topRouteName?.take(10) ?: "—",
+                            label = "Rute tersering",
+                            icon = Icons.Default.Route,
+                            tint = SelaPastel.lavenderSoft,
+                            deep = SelaPastel.lavenderDeep,
+                        )
+                    }
+                    cell {
+                        PastelStatCell(
+                            value = stats.topStopName?.take(10) ?: "—",
+                            label = "Halte tersering",
+                            icon = Icons.Default.LocationOn,
+                            tint = SelaPastel.peachSoft,
+                            deep = SelaPastel.peachDeep,
+                        )
+                    }
                 }
             }
 
             // Riwayat
-            SelaCard {
+            PastelCard {
                 Row(
                     Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    SelaSectionTitle("Riwayat perjalanan")
+                    PastelSectionTitle("Riwayat perjalanan")
                     if (state.history.isNotEmpty()) {
-                        SelaRouteBadge("${state.history.size}", MaterialTheme.colorScheme.primary)
+                        PastelRouteBadge(
+                            "${state.history.size}",
+                            tint = SelaPastel.blue,
+                            deep = SelaPastel.blueDeep,
+                        )
                     }
                 }
                 if (state.history.isEmpty()) {
                     Text(
                         "Belum ada riwayat. Pilih rute atau halte di peta untuk mulai mencatat.",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = SelaPastel.inkSoft,
                     )
                 } else {
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         state.history.take(10).forEach { h ->
                             val label = h.routeName.ifBlank { h.stopName.orEmpty() }.ifBlank { h.routeId }
                             Column(Modifier.padding(vertical = 6.dp)) {
-                                Text(label, style = MaterialTheme.typography.bodyMedium, maxLines = 1)
+                                Text(label, style = MaterialTheme.typography.bodyMedium, color = SelaPastel.ink, maxLines = 1)
                                 Text(
                                     formatTime(h.timestamp),
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    color = SelaPastel.inkSoft,
                                 )
                             }
-                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                            HorizontalDivider(color = SelaPastel.hairline)
                         }
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        SelaGhostButton("Hapus riwayat", viewModel::clearHistory, destructive = true)
-                        SelaGhostButton("Ekspor CSV", { viewModel.exportCsv { csv -> shareCsv(context, csv) } })
+                        PastelTextButton("Hapus riwayat", viewModel::clearHistory, destructive = true)
+                        PastelTextButton("Ekspor CSV", { viewModel.exportCsv { csv -> shareCsv(context, csv) } })
                     }
                 }
             }
 
             // Tampilan — AMOLED (#60) & Material You (#91)
-            SelaCard {
-                SelaSectionTitle("Tampilan")
-                Row(
-                    Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text("Hitam AMOLED", style = MaterialTheme.typography.titleSmall)
-                        Text(
-                            "Latar hitam murni, hemat baterai layar OLED.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    Switch(
-                        checked = state.amoledDark,
-                        onCheckedChange = { viewModel.toggleAmoled() },
-                    )
-                }
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                Row(
-                    Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text("Material You", style = MaterialTheme.typography.titleSmall)
-                        Text(
-                            "Warna mengikuti wallpaper perangkat (Android 12+).",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    Switch(
-                        checked = state.materialYou,
-                        onCheckedChange = { viewModel.toggleMaterialYou() },
-                    )
-                }
+            PastelCard(tint = SelaPastel.peachSoft, shadowTint = SelaPastel.peachDeep) {
+                PastelSectionTitle("Tampilan")
+                ToggleRow(
+                    "Hitam AMOLED",
+                    "Latar hitam murni, hemat baterai layar OLED.",
+                    state.amoledDark,
+                    viewModel::toggleAmoled,
+                )
+                HorizontalDivider(color = SelaPastel.hairline)
+                ToggleRow(
+                    "Material You",
+                    "Warna mengikuti wallpaper perangkat (Android 12+).",
+                    state.materialYou,
+                    viewModel::toggleMaterialYou,
+                )
             }
 
             // Fitur lanjutan
-            SelaCard {
-                SelaSectionTitle("Fitur lanjutan")
+            PastelCard(tint = SelaPastel.blueSoft, shadowTint = SelaPastel.blueDeep) {
+                PastelSectionTitle("Fitur lanjutan")
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    SelaSecondaryButton(
+                    SelaButton(
                         text = "Riwayat perjalanan",
                         onClick = { onNavigate("history") },
+                        style = SelaButtonStyle.Soft,
+                        accent = SelaPastel.blue,
+                        onAccent = SelaPastel.blueDeep,
                         icon = Icons.Default.History,
                         modifier = Modifier.fillMaxWidth(),
                     )
-                    SelaSecondaryButton(
+                    SelaButton(
                         text = "Peta offline",
                         onClick = { onNavigate("peta-offline") },
+                        style = SelaButtonStyle.Soft,
+                        accent = SelaPastel.mint,
+                        onAccent = SelaPastel.mintDeep,
                         icon = Icons.Default.Download,
                         modifier = Modifier.fillMaxWidth(),
                     )
-                    SelaSecondaryButton(
+                    SelaButton(
                         text = "Perencana perjalanan",
                         onClick = { onNavigate("trip-planner") },
+                        style = SelaButtonStyle.Soft,
+                        accent = SelaPastel.lavender,
+                        onAccent = SelaPastel.lavenderDeep,
                         icon = Icons.Default.Route,
                         modifier = Modifier.fillMaxWidth(),
                     )
-                    SelaSecondaryButton(
+                    SelaButton(
                         text = "AR halte",
                         onClick = { onNavigate("ar?mode=halte") },
+                        style = SelaButtonStyle.Soft,
+                        accent = SelaPastel.purple,
+                        onAccent = SelaPastel.purpleDeep,
                         icon = Icons.Default.Videocam,
                         modifier = Modifier.fillMaxWidth(),
                     )
-                    SelaSecondaryButton(
+                    SelaButton(
                         text = "Berbagi ke HP sekitar",
                         onClick = { onNavigate("mesh") },
+                        style = SelaButtonStyle.Soft,
+                        accent = SelaPastel.peach,
+                        onAccent = SelaPastel.peachDeep,
                         icon = Icons.Default.Bluetooth,
                         modifier = Modifier.fillMaxWidth(),
                     )
-                    SelaSecondaryButton(
+                    SelaButton(
                         text = "SOS darurat",
                         onClick = { onNavigate("sos") },
+                        style = SelaButtonStyle.Soft,
+                        accent = SelaPastel.danger,
+                        onAccent = SelaPastel.dangerDeep,
                         icon = Icons.Default.Warning,
                         modifier = Modifier.fillMaxWidth(),
                     )
@@ -524,34 +597,22 @@ fun SettingsScreen(
             }
 
             // Mode offline
-            SelaCard {
-                SelaKeyValueRow("Pemakaian data hari ini", state.dataUsageText)
-                Row(
-                    Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text("Mode offline", style = MaterialTheme.typography.titleSmall)
-                        Text(
-                            "Matikan data live (MQTT). Semua fitur kecuali posisi bus berjalan dari penyimpanan lokal, tanpa internet.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    Switch(
-                        checked = state.offlineMode,
-                        onCheckedChange = { viewModel.toggleOffline() },
-                    )
-                }
+            PastelCard {
+                PastelKeyValueRow("Pemakaian data hari ini", state.dataUsageText)
+                ToggleRow(
+                    "Mode offline",
+                    "Matikan data live (MQTT). Semua fitur kecuali posisi bus berjalan dari penyimpanan lokal, tanpa internet.",
+                    state.offlineMode,
+                    viewModel::toggleOffline,
+                )
             }
 
             // Pembaruan data
-            SelaCard {
-                SelaSectionTitle("Pembaruan data")
-                SelaKeyValueRow("Versi data", state.gtfsVersion.ifBlank { "—" })
-                SelaKeyValueRow("Terakhir diperbarui", formatTime(state.gtfsUpdatedAt))
-                SelaKeyValueRow("Ukuran data lokal", dbSizeText)
+            PastelCard {
+                PastelSectionTitle("Pembaruan data")
+                PastelKeyValueRow("Versi data", state.gtfsVersion.ifBlank { "—" })
+                PastelKeyValueRow("Terakhir diperbarui", formatTime(state.gtfsUpdatedAt))
+                PastelKeyValueRow("Ukuran data lokal", dbSizeText)
                 OutlinedTextField(
                     value = urlDraft,
                     onValueChange = { urlDraft = it },
@@ -560,75 +621,66 @@ fun SettingsScreen(
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
-                    shape = SelaTokens.field,
+                    shape = SelaPastelShapes.field,
+                    colors = pastelFieldColors(),
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    SelaPrimaryButton(
-                        "Simpan URL",
-                        { viewModel.saveUrl(urlDraft) },
+                    SelaButton(
+                        text = "Simpan URL",
+                        onClick = { viewModel.saveUrl(urlDraft) },
+                        style = SelaButtonStyle.Primary,
                         enabled = !state.busy,
                         modifier = Modifier.weight(1f),
                     )
-                    SelaOutlineButton(
-                        if (state.busy) "Memeriksa…" else "Cek",
-                        viewModel::checkUpdate,
+                    SelaButton(
+                        text = if (state.busy) "Memeriksa…" else "Cek",
+                        onClick = viewModel::checkUpdate,
+                        style = SelaButtonStyle.Soft,
                         enabled = !state.busy,
                     )
                 }
-                SelaGhostButton("Kembali ke data bawaan", viewModel::resetData)
+                PastelTextButton("Kembali ke data bawaan", viewModel::resetData)
                 Text(
                     "Kosongkan URL untuk menonaktifkan pembaruan otomatis.",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = SelaPastel.inkSoft,
                 )
             }
 
             // Notifikasi
-            SelaCard {
-                SelaSectionTitle("Notifikasi")
-                Row(
-                    Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text("Peringatkan saat bus favorit dekat", style = MaterialTheme.typography.titleSmall)
-                        Text(
-                            "Berlaku untuk halte favorit, radius 2 km.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    Switch(
-                        checked = state.arrivalAlerts,
-                        onCheckedChange = { viewModel.toggleAlerts() },
-                    )
-                }
+            PastelCard(tint = SelaPastel.pinkSoft, shadowTint = SelaPastel.pinkDeep) {
+                PastelSectionTitle("Notifikasi")
+                ToggleRow(
+                    "Peringatkan saat bus favorit dekat",
+                    "Berlaku untuk halte favorit, radius 2 km.",
+                    state.arrivalAlerts,
+                    viewModel::toggleAlerts,
+                )
                 if (state.notifications.isNotEmpty()) {
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    HorizontalDivider(color = SelaPastel.hairline)
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         state.notifications.take(5).forEach { n ->
                             Column(Modifier.padding(vertical = 6.dp)) {
-                                Text(n.title, style = MaterialTheme.typography.bodyMedium, maxLines = 1)
+                                Text(n.title, style = MaterialTheme.typography.bodyMedium, color = SelaPastel.ink, maxLines = 1)
                                 Text(
                                     formatTime(n.timestamp),
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    color = SelaPastel.inkSoft,
                                 )
                             }
                         }
                     }
-                    SelaGhostButton("Hapus riwayat notifikasi", viewModel::clearNotifications, destructive = true)
+                    PastelTextButton("Hapus riwayat notifikasi", viewModel::clearNotifications, destructive = true)
                 }
             }
 
             // Backup & restore (#118, #119) — via Storage Access Framework, tanpa server
-            SelaCard {
-                SelaSectionTitle("Backup & restore")
+            PastelCard(tint = SelaPastel.lavenderSoft, shadowTint = SelaPastel.lavenderDeep) {
+                PastelSectionTitle("Backup & restore")
                 Text(
                     "Simpan favorit + riwayat ke file JSON (bisa ke Google Drive). Tanpa server SELA.",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = SelaPastel.inkSoft,
                 )
                 val exportLauncher = rememberLauncherForActivityResult(
                     ActivityResultContracts.CreateDocument("application/json"),
@@ -654,26 +706,32 @@ fun SettingsScreen(
                     }
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    SelaSecondaryButton(
-                        "Backup",
-                        { exportLauncher.launch("sela-backup.json") },
+                    SelaButton(
+                        text = "Backup",
+                        onClick = { exportLauncher.launch("sela-backup.json") },
+                        style = SelaButtonStyle.Soft,
+                        accent = SelaPastel.lavender,
+                        onAccent = SelaPastel.lavenderDeep,
                         modifier = Modifier.weight(1f),
                     )
-                    SelaSecondaryButton(
-                        "Restore",
-                        { importLauncher.launch(arrayOf("application/json")) },
+                    SelaButton(
+                        text = "Restore",
+                        onClick = { importLauncher.launch(arrayOf("application/json")) },
+                        style = SelaButtonStyle.Soft,
+                        accent = SelaPastel.lavender,
+                        onAccent = SelaPastel.lavenderDeep,
                         modifier = Modifier.weight(1f),
                     )
                 }
             }
 
             // Profil (#120)
-            SelaCard {
-                SelaSectionTitle("Profil")
+            PastelCard(tint = SelaPastel.blueSoft, shadowTint = SelaPastel.blueDeep) {
+                PastelSectionTitle("Profil")
                 Text(
                     "Satu HP untuk sekeluarga. Profil menyimpan nama + halte rumah; riwayat & favorit tetap bersama.",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = SelaPastel.inkSoft,
                 )
                 state.profiles.forEach { profile ->
                     Row(
@@ -685,11 +743,15 @@ fun SettingsScreen(
                             RadioButton(
                                 selected = profile.id == state.activeProfileId,
                                 onClick = { viewModel.switchProfile(profile.id) },
+                                colors = RadioButtonDefaults.colors(
+                                    selectedColor = SelaPastel.blueDeep,
+                                    unselectedColor = SelaPastel.inkFaint,
+                                ),
                             )
-                            Text(profile.name, style = MaterialTheme.typography.bodyMedium)
+                            Text(profile.name, style = MaterialTheme.typography.bodyMedium, color = SelaPastel.ink)
                         }
                         if (profile.id != "default") {
-                            SelaGhostButton("Hapus", { viewModel.removeProfile(profile.id) }, destructive = true)
+                            PastelTextButton("Hapus", { viewModel.removeProfile(profile.id) }, destructive = true)
                         }
                     }
                 }
@@ -705,151 +767,118 @@ fun SettingsScreen(
                         label = { Text("Nama profil baru") },
                         modifier = Modifier.weight(1f),
                         singleLine = true,
-                        shape = SelaTokens.field,
+                        shape = SelaPastelShapes.field,
+                        colors = pastelFieldColors(),
                     )
-                    SelaSecondaryButton("Tambah", {
-                        if (profileDraft.isNotBlank()) {
-                            viewModel.addProfile(profileDraft)
-                            profileDraft = ""
-                        }
-                    })
+                    SelaButton(
+                        text = "Tambah",
+                        onClick = {
+                            if (profileDraft.isNotBlank()) {
+                                viewModel.addProfile(profileDraft)
+                                profileDraft = ""
+                            }
+                        },
+                        style = SelaButtonStyle.Soft,
+                    )
                 }
             }
 
             // Privasi
-            SelaCard {
-                SelaSectionTitle("Privasi")
+            PastelCard(tint = SelaPastel.mintSoft, shadowTint = SelaPastel.mintDeep) {
+                PastelSectionTitle("Privasi")
                 Text(
                     "Lokasi hanya diminta saat Anda menekan tombol lokasi. Tidak ada pelacakan latar belakang. Favorit, riwayat, dan pengaturan hanya tersimpan di perangkat ini.",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = SelaPastel.inkSoft,
                 )
             }
 
             // Mode tampilan (#66 tunanetra, #122 lansia, #121 anak)
-            SelaCard {
-                SelaSectionTitle("Mode tampilan")
+            PastelCard(tint = SelaPastel.peachSoft, shadowTint = SelaPastel.peachDeep) {
+                PastelSectionTitle("Mode tampilan")
                 Text(
                     "Lansia: huruf lebih besar. Anak: ikon lebih besar. Tunanetra: optimal untuk TalkBack + pengumuman suara.",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = SelaPastel.inkSoft,
                 )
-                @OptIn(ExperimentalMaterial3Api::class)
                 SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
                     listOf("normal" to "Normal", "tunanetra" to "Tunanetra", "lansia" to "Lansia", "anak" to "Anak").forEachIndexed { i, (value, label) ->
                         SegmentedButton(
                             selected = state.uiMode == value,
                             onClick = { viewModel.setUiMode(value) },
                             shape = SegmentedButtonDefaults.itemShape(i, 4),
+                            colors = segColors,
                         ) { Text(label, maxLines = 1) }
                     }
                 }
             }
 
             // Suara & bahasa daerah (#56, #22)
-            SelaCard {
-                SelaSectionTitle("Suara & bahasa")
-                Row(
-                    Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text("Pengumuman suara halte", style = MaterialTheme.typography.titleSmall)
-                        Text(
-                            "Bacakan halte berikutnya (suara kondektur).",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    Switch(checked = state.voiceAnnounce, onCheckedChange = { viewModel.toggleVoiceAnnounce() })
-                }
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                Text("Bahasa pengumuman", style = MaterialTheme.typography.titleSmall)
-                @OptIn(ExperimentalMaterial3Api::class)
+            PastelCard(tint = SelaPastel.lavenderSoft, shadowTint = SelaPastel.lavenderDeep) {
+                PastelSectionTitle("Suara & bahasa")
+                ToggleRow(
+                    "Pengumuman suara halte",
+                    "Bacakan halte berikutnya (suara kondektur).",
+                    state.voiceAnnounce,
+                    viewModel::toggleVoiceAnnounce,
+                )
+                HorizontalDivider(color = SelaPastel.hairline)
+                Text("Bahasa pengumuman", style = MaterialTheme.typography.titleSmall, color = SelaPastel.ink)
                 SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
                     listOf("indonesia" to "Indonesia", "jawa" to "Jawa", "sunda" to "Sunda", "betawi" to "Betawi").forEachIndexed { i, (value, label) ->
                         SegmentedButton(
                             selected = state.announceLang == value,
                             onClick = { viewModel.setAnnounceLang(value) },
                             shape = SegmentedButtonDefaults.itemShape(i, 4),
+                            colors = segColors,
                         ) { Text(label, maxLines = 1) }
                     }
                 }
             }
 
             // Kenyamanan (#93, #55, #70, #58, #51)
-            SelaCard {
-                SelaSectionTitle("Kenyamanan")
-                @Composable
-                fun ToggleRow(title: String, desc: String, checked: Boolean, onToggle: () -> Unit) {
-                    Row(
-                        Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text(title, style = MaterialTheme.typography.titleSmall)
-                            Text(desc, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        Switch(checked = checked, onCheckedChange = { onToggle() })
-                    }
-                }
+            PastelCard(tint = SelaPastel.mintSoft, shadowTint = SelaPastel.mintDeep) {
+                PastelSectionTitle("Kenyamanan")
                 ToggleRow("Getaran cerdas", "Pola getar beda tiap kejadian.", state.hapticsEnabled, viewModel::toggleHaptics)
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                HorizontalDivider(color = SelaPastel.hairline)
                 ToggleRow("Hemat baterai", "Kurangi frekuensi lokasi & sinkron.", state.batterySaver, viewModel::toggleBatterySaver)
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                HorizontalDivider(color = SelaPastel.hairline)
                 ToggleRow("Mode tidur", "Ketiduran di bus: getar kuat + layar penuh saat halte dekat.", state.sleepMode, viewModel::toggleSleepMode)
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                HorizontalDivider(color = SelaPastel.hairline)
                 ToggleRow("Mode turis", "Tampilkan info wisata di halte.", state.touristMode, viewModel::toggleTouristMode)
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                HorizontalDivider(color = SelaPastel.hairline)
                 ToggleRow("Gedung 3D", "Tampilkan gedung 3D di peta (zoom dekat).", state.map3dEnabled, viewModel::toggleMap3d)
             }
 
             // Otomatisasi (#63, #57, #79, #53)
-            SelaCard {
-                SelaSectionTitle("Otomatisasi")
+            PastelCard(tint = SelaPastel.blueSoft, shadowTint = SelaPastel.blueDeep) {
+                PastelSectionTitle("Otomatisasi")
                 Text(
                     "Check-in otomatis hanya heuristik lokasi — bukan pembayaran dan bukan bukti naik bus.",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = SelaPastel.inkSoft,
                 )
-                Row(
-                    Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text("Check-in otomatis", style = MaterialTheme.typography.titleSmall)
-                        Text("Catat perjalanan saat terdeteksi di dekat bus.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    Switch(checked = state.autoCheckin, onCheckedChange = { viewModel.toggleAutoCheckin() })
-                }
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                Row(
-                    Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text("Pengingat kalender", style = MaterialTheme.typography.titleSmall)
-                        Text("Ingatkan berangkat sebelum acara (butuh izin kalender).", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    Switch(checked = state.calendarReminders, onCheckedChange = { viewModel.toggleCalendarReminders() })
-                }
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                Row(
-                    Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text("Waspada pejalan kaki", style = MaterialTheme.typography.titleSmall)
-                        Text("Peringatkan bila bus sangat dekat dengan posisimu.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    Switch(checked = state.driverWatch, onCheckedChange = { viewModel.toggleDriverWatch() })
-                }
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                ToggleRow(
+                    "Check-in otomatis",
+                    "Catat perjalanan saat terdeteksi di dekat bus.",
+                    state.autoCheckin,
+                    viewModel::toggleAutoCheckin,
+                )
+                HorizontalDivider(color = SelaPastel.hairline)
+                ToggleRow(
+                    "Pengingat kalender",
+                    "Ingatkan berangkat sebelum acara (butuh izin kalender).",
+                    state.calendarReminders,
+                    viewModel::toggleCalendarReminders,
+                )
+                HorizontalDivider(color = SelaPastel.hairline)
+                ToggleRow(
+                    "Waspada pejalan kaki",
+                    "Peringatkan bila bus sangat dekat dengan posisimu.",
+                    state.driverWatch,
+                    viewModel::toggleDriverWatch,
+                )
+                HorizontalDivider(color = SelaPastel.hairline)
                 var homeDraft by remember(state.homeStopId) { mutableStateOf(state.homeStopId) }
                 OutlinedTextField(
                     value = homeDraft,
@@ -858,14 +887,20 @@ fun SettingsScreen(
                     placeholder = { Text("cth: monas") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    shape = SelaTokens.field,
+                    shape = SelaPastelShapes.field,
+                    colors = pastelFieldColors(),
                 )
-                SelaSecondaryButton("Simpan halte rumah", { viewModel.saveHomeStopId(homeDraft) }, modifier = Modifier.fillMaxWidth())
+                SelaButton(
+                    text = "Simpan halte rumah",
+                    onClick = { viewModel.saveHomeStopId(homeDraft) },
+                    style = SelaButtonStyle.Soft,
+                    modifier = Modifier.fillMaxWidth(),
+                )
             }
 
             // Darurat (#21, #59, #123)
-            SelaCard {
-                SelaSectionTitle("Darurat")
+            PastelCard(tint = SelaPastel.dangerSoft, shadowTint = SelaPastel.dangerDeep) {
+                PastelSectionTitle("Darurat")
                 var phoneDraft by remember(state.emergencyContact) { mutableStateOf(state.emergencyContact) }
                 OutlinedTextField(
                     value = phoneDraft,
@@ -875,19 +910,30 @@ fun SettingsScreen(
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                    shape = SelaTokens.field,
+                    shape = SelaPastelShapes.field,
+                    colors = pastelFieldColors(),
                 )
-                SelaSecondaryButton("Simpan kontak", { viewModel.saveEmergencyContact(phoneDraft) }, modifier = Modifier.fillMaxWidth())
-                SelaSecondaryButton(
+                SelaButton(
+                    text = "Simpan kontak",
+                    onClick = { viewModel.saveEmergencyContact(phoneDraft) },
+                    style = SelaButtonStyle.Soft,
+                    accent = SelaPastel.danger,
+                    onAccent = SelaPastel.dangerDeep,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                SelaButton(
                     text = "Buka layar SOS",
                     onClick = { onNavigate("sos") },
+                    style = SelaButtonStyle.Soft,
+                    accent = SelaPastel.danger,
+                    onAccent = SelaPastel.dangerDeep,
                     icon = Icons.Default.Warning,
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Text(
                     "SOS mengirim lokasi + info rute via WhatsApp. Goyang 3x juga bisa memicu SOS (aktifkan di layar SOS).",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = SelaPastel.inkSoft,
                 )
             }
 
@@ -900,12 +946,12 @@ fun SettingsScreen(
                 Text(
                     "Peta: © OpenFreeMap, © OpenMapTiles, © OpenStreetMap contributors",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = SelaPastel.inkFaint,
                 )
                 Text(
                     "SELA 0.4.0 · Android · Standalone",
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = SelaPastel.inkSoft,
                 )
             }
             Spacer(Modifier.navigationBarsPadding())

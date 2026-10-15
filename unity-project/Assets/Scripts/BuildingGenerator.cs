@@ -34,6 +34,10 @@ public class BuildingGenerator : MonoBehaviour
             buildingMaterial.color = new Color(0.08f, 0.09f, 0.12f, 1f);
             buildingMaterial.SetFloat("_Smoothness", 0.3f);
         }
+        // Setup sekali: emissive jendela malam + GPU instancing.
+        // (Berlaku juga untuk material yang di-assign via Inspector.)
+        buildingMaterial.EnableKeyword("_EMISSION");
+        buildingMaterial.enableInstancing = true;
 
         float blockSize = 300f; // sama dengan spacing jalan
         float roadHalf = 12f;   // setengah lebar jalan arterial

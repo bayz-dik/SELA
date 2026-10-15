@@ -45,6 +45,11 @@ public class RouteRenderer : MonoBehaviour
     private MapController map;
     private string selectedId;
 
+    // Material shared per (warna, renderQueue): dibuat sekali, dipakai semua rute.
+    // (Sebelumnya `new Material` per garis — bocor setiap rebuild rute.)
+    private static readonly Dictionary<string, Material> SharedLineMaterials =
+        new Dictionary<string, Material>();
+
     void Awake()
     {
         map = GetComponent<MapController>();
@@ -92,8 +97,8 @@ public class RouteRenderer : MonoBehaviour
         for (int i = 0; i < dto.points.Length; i++)
         {
             var pt = dto.points[i];
-            if (pt == null || pt.Length < 2) continue;
-            var world = map.LatLonToWorld(pt[0], pt[1]);
+            if (pt == null) continue;
+            var world = map.LatLonToWorld(pt.lat, pt.lon);
             world.y = elevationAboveRoad;
             positions[i] = world;
         }
@@ -139,11 +144,16 @@ public class RouteRenderer : MonoBehaviour
 
     private Material MakeLineMaterial(Color color, int renderQueue)
     {
-        var mat = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
-        mat.color = color;
-        // Selalu di atas jalan/gedung agar rute terbaca (§8)
-        mat.SetInt("_ZTest", (int)UnityEngine.Rendering.CompareFunction.Always);
-        mat.renderQueue = renderQueue;
+        string key = ColorUtility.ToHtmlStringRGBA(color) + ":" + renderQueue;
+        if (!SharedLineMaterials.TryGetValue(key, out var mat) || mat == null)
+        {
+            mat = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
+            mat.color = color;
+            // Selalu di atas jalan/gedung agar rute terbaca (§8)
+            mat.SetInt("_ZTest", (int)UnityEngine.Rendering.CompareFunction.Always);
+            mat.renderQueue = renderQueue;
+            SharedLineMaterials[key] = mat;
+        }
         return mat;
     }
 
@@ -154,14 +164,10 @@ public class RouteRenderer : MonoBehaviour
             if (ColorUtility.TryParseHtmlString(dto.color, out var parsed))
                 return parsed;
         }
-        // Fallback: tebak dari ID rute
-        string id = (dto.id ?? "").ToLowerInvariant();
-        if (id.Contains("jaklingko") || id.StartsWith("jak")) return CorridorColors["jaklingko"];
-        if (id.StartsWith("brt") || char.IsDigit(id.Length > 0 ? id[0] : 'x'))
-        {
-            // Koridor BRT biasanya angka 1-13
-            return CorridorColors["brt"];
-        }
+        // Fallback: klasifikasi terpusat — konsisten dengan BusMarkerManager.
+        string id = dto.id ?? "";
+        if (CorridorClassifier.IsJakLingko(id)) return CorridorColors["jaklingko"];
+        if (CorridorClassifier.IsBrt(id)) return CorridorColors["brt"];
         return DefaultColor;
     }
 

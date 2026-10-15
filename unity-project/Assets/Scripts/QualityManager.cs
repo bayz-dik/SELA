@@ -131,14 +131,21 @@ public class QualityManager : MonoBehaviour
         QualitySettings.shadows = shadows
             ? UnityEngine.ShadowQuality.HardOnly : UnityEngine.ShadowQuality.Disable;
 
-        // URP: matikan shadow via render pipeline asset jika ada
-        var urp = GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
-        if (urp != null)
+        // URP: QualitySettings.shadows/pixelLightCount tidak berpengaruh di URP —
+        // matikan shadow langsung di directional light utama (matahari).
+        // (URP asset properties hanya bisa diubah via SerializedObject di Editor,
+        // jadi per-light adalah jalur runtime yang valid.)
+        Light sun = lighting != null ? lighting.sunLight : null;
+        if (sun == null)
         {
-            // URP asset properties diakses via serialized object di editor;
-            // di runtime kita atur lewat QualitySettings + per-light shadow.
-            // (Keterbatasan runtime API — didokumentasikan.)
+            // Fallback: directional light pertama di scene
+            foreach (var l in FindObjectsOfType<Light>())
+            {
+                if (l.type == LightType.Directional) { sun = l; break; }
+            }
         }
+        if (sun != null)
+            sun.shadows = shadows ? LightShadows.Soft : LightShadows.None;
 
         if (streetlights != null)
             streetlights.SetDensity(streetlightDensity);
@@ -184,6 +191,28 @@ public class QualityManager : MonoBehaviour
         {
             Debug.Log($"[QualityManager] Frame {avgMs:F1}ms — downgrade {currentTier} -> {currentTier - 1}");
             ApplyTier(currentTier - 1);
+        }
+    }
+
+    // --- Auto frame-time sampling (throttled): ReportFrameTime sebelumnya
+    // tidak pernah dipanggil siapa pun. Kini QualityManager mengukur sendiri
+    // rata-rata frame tiap 2 detik dan memanggil ReportFrameTime.
+    private float frameAccumMs;
+    private int frameCount;
+    private float reportTimer;
+
+    void Update()
+    {
+        frameAccumMs += Time.unscaledDeltaTime * 1000f;
+        frameCount++;
+        reportTimer += Time.unscaledDeltaTime;
+        if (reportTimer >= 2f)
+        {
+            float avg = frameCount > 0 ? frameAccumMs / frameCount : 0f;
+            frameAccumMs = 0f;
+            frameCount = 0;
+            reportTimer = 0f;
+            ReportFrameTime(avg);
         }
     }
 }

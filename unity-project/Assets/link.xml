@@ -1,0 +1,15 @@
+<!-- link.xml — Cegah IL2CPP managed-code stripping membuang tipe yang
+     dipakai SelaBridge via reflection murni (tanpa referensi compile-time).
+
+     SelaBridge.CallKotlinStatic me-resolve saat runtime:
+       UnityEngine.AndroidJavaClass  (dari modul UnityEngine.AndroidJNIModule,
+                                     tipe didefinisikan di assembly UnityEngine)
+     Tanpa preserve ini, linker bisa menghapus konstruktor/metode yang hanya
+     dirujuk lewat System.Type.GetType("UnityEngine.AndroidJavaClass, ...").
+-->
+<linker>
+  <assembly fullname="UnityEngine">
+    <type fullname="UnityEngine.AndroidJavaClass" preserve="all"/>
+    <type fullname="UnityEngine.AndroidJavaObject" preserve="all"/>
+  </assembly>
+</linker>

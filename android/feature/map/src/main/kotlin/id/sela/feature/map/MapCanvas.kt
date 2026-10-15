@@ -28,6 +28,7 @@ import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.MapView
+import org.maplibre.android.maps.Style
 
 @OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
 @Composable
@@ -37,7 +38,12 @@ fun MapCanvas(state: MapUiState, styleUrl: String, modifier: Modifier = Modifier
     /** 3D Ultra: aktifkan tilt gesture dua-jari (hanya saat mode 3D). */
     tiltGesturesEnabled: Boolean = false,
     /** 3D Ultra: dipanggil saat user menggerakkan kamera manual (untuk Follow → Free). */
-    onManualGesture: () -> Unit = {}) {
+    onManualGesture: () -> Unit = {},
+    /** B21: follow mode 2D aktif — tampilkan titik biru posisi user. */
+    followActive: Boolean = false,
+    /** B21: posisi user terakhir (hanya dipakai saat [followActive]). */
+    userLocation: GeoPoint? = null,
+) {
     val context = LocalContext.current
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val selection by rememberUpdatedState(onSelect)
@@ -48,6 +54,12 @@ fun MapCanvas(state: MapUiState, styleUrl: String, modifier: Modifier = Modifier
     val mapView = remember(context) { MapLibre.getInstance(context); MapView(context).apply { onCreate(null) } }
     var map by remember { mutableStateOf<MapLibreMap?>(null) }
     var styleReady by remember { mutableStateOf(false) }
+    // B20: epoch naik tiap style selesai diganti — efek anotasi di-key padanya
+    // agar dibuat ulang, aman baik anotasi bertahan maupun hancur saat ganti style.
+    var styleEpoch by remember { mutableStateOf(0) }
+    var appliedStyle by remember { mutableStateOf<String?>(null) }
+    val userDot = remember(context) { userDotIcon(context) }
+    val userMarkers = remember { mutableMapOf<String, Marker>() }
     val markerIds = remember { mutableMapOf<Long, Pair<String, String>>() }
     val icons = remember { mutableMapOf<String, Icon>() }
     val stopMarkers = remember { mutableMapOf<String, Marker>() }
@@ -99,7 +111,8 @@ fun MapCanvas(state: MapUiState, styleUrl: String, modifier: Modifier = Modifier
                     nativeMap.projection.visibleRegion.latLngBounds.let { boundsCallback(VisibleBounds(it.latitudeSouth, it.longitudeWest, it.latitudeNorth, it.longitudeEast)) }
                     if (!destroyed) nativeMap.cameraPosition.let { position -> position.target?.let { cameraCallback(MapCamera(it.latitude, it.longitude, position.zoom, position.tilt, position.bearing)) } }
                 }
-                nativeMap.setStyle(styleUrl) { if (!destroyed) {
+                applyMapStyle(nativeMap, styleUrl) { if (!destroyed) {
+                    appliedStyle = styleUrl
                     styleReady = true
                     nativeMap.projection.visibleRegion.latLngBounds.let { boundsCallback(VisibleBounds(it.latitudeSouth, it.longitudeWest, it.latitudeNorth, it.longitudeEast)) }
                 } }
@@ -117,9 +130,38 @@ fun MapCanvas(state: MapUiState, styleUrl: String, modifier: Modifier = Modifier
             icons.clear()
         }
     }
+    // B20: ganti style gelap ↔ satelit tanpa membuat ulang MapView.
+    LaunchedEffect(map, styleUrl, styleReady) {
+        val nativeMap = map ?: return@LaunchedEffect
+        if (!styleReady || appliedStyle == styleUrl) return@LaunchedEffect
+        appliedStyle = styleUrl
+        applyMapStyle(nativeMap, styleUrl) {
+            styleEpoch++
+            nativeMap.projection.visibleRegion.latLngBounds.let {
+                boundsCallback(VisibleBounds(it.latitudeSouth, it.longitudeWest, it.latitudeNorth, it.longitudeEast))
+            }
+        }
+    }
+    // B21: titik biru #4285f4 posisi user — hanya tampil saat follow mode aktif.
+    // Sengaja tidak didaftarkan ke markerIds: ketuk titik biru = no-op.
+    LaunchedEffect(map, styleReady, styleEpoch, followActive, userLocation) {
+        val nativeMap = map ?: return@LaunchedEffect
+        if (!styleReady) return@LaunchedEffect
+        val loc = if (followActive) userLocation else null
+        if (loc == null) {
+            removeMissingMarkers(nativeMap, userMarkers, emptySet(), markerIds)
+        } else {
+            removeMissingMarkers(nativeMap, userMarkers, setOf(USER_MARKER_ID), markerIds)
+            updateTransitMarker(
+                nativeMap, userMarkers, USER_MARKER_ID,
+                LatLng(loc.lat, loc.lon), "Lokasi saya", null, userDot,
+            )
+        }
+    }
     // Gedung 3D (#51) — layer fill-extrusion di atas style yang sudah siap.
     // Batasan jujur: butuh data building dari style; gagal diam-diam bila tidak ada.
-    LaunchedEffect(map, styleReady, show3dBuildings) {
+    // B20: di-key pada styleEpoch agar layer dipasang ulang tiap ganti style.
+    LaunchedEffect(map, styleReady, styleEpoch, show3dBuildings) {
         val nativeMap = map ?: return@LaunchedEffect
         if (!styleReady) return@LaunchedEffect
         runCatching {
@@ -147,7 +189,8 @@ fun MapCanvas(state: MapUiState, styleUrl: String, modifier: Modifier = Modifier
         }
     }
     // Stops and the route stay intact when only vehicle telemetry changes.
-    LaunchedEffect(map, styleReady, state.data.stops, routes, state.filter, state.visibleBounds) {
+    // B20: di-key pada styleEpoch agar marker dibuat ulang tiap ganti style.
+    LaunchedEffect(map, styleReady, styleEpoch, state.data.stops, routes, state.filter, state.visibleBounds) {
         val nativeMap = map ?: return@LaunchedEffect
         if (!styleReady) return@LaunchedEffect
         val visibleStops = filterStops(state.data.stops, state.data.routes, state.filter).filter { stop ->
@@ -163,7 +206,7 @@ fun MapCanvas(state: MapUiState, styleUrl: String, modifier: Modifier = Modifier
             markerIds[marker.id] = "stop" to stop.id
         }
     }
-    LaunchedEffect(map, styleReady, state.data.vehicles, routes, state.filter) {
+    LaunchedEffect(map, styleReady, styleEpoch, state.data.vehicles, routes, state.filter) {
         val nativeMap = map ?: return@LaunchedEffect
         if (!styleReady) return@LaunchedEffect
         val vehicles = state.data.vehicles.filter { vehicle ->
@@ -180,7 +223,7 @@ fun MapCanvas(state: MapUiState, styleUrl: String, modifier: Modifier = Modifier
             markerIds[marker.id] = "vehicle" to vehicle.id
         }
     }
-    LaunchedEffect(map, styleReady, state.shape, routeColor) {
+    LaunchedEffect(map, styleReady, styleEpoch, state.shape, routeColor) {
         val nativeMap = map ?: return@LaunchedEffect
         if (!styleReady) return@LaunchedEffect
         routeLines.forEach { nativeMap.removeAnnotation(it) }
@@ -273,6 +316,41 @@ private fun updateTransitMarker(
     if (marker.title != title) marker.title = title
     if (marker.snippet != snippet) marker.snippet = snippet
     return marker
+}
+
+/** Id marker titik biru posisi user (follow mode). */
+private const val USER_MARKER_ID = "sela-user-dot"
+
+/**
+ * B20: terapkan style peta — URL style (gelap OpenFreeMap) atau JSON style
+ * inline (satelit ESRI World Imagery). MapLibre butuh objek style penuh;
+ * tile URL mentah tidak bisa di-set langsung.
+ */
+private fun applyMapStyle(nativeMap: MapLibreMap, style: String, onLoaded: () -> Unit) {
+    val builder = if (style.trimStart().startsWith("{")) Style.Builder().fromJson(style)
+    else Style.Builder().fromUrl(style)
+    nativeMap.setStyle(builder) { onLoaded() }
+}
+
+/**
+ * B21: titik biru #4285f4 dengan ring putih — penanda posisi user saat
+ * follow mode aktif (port dari web).
+ */
+private fun userDotIcon(context: Context): Icon {
+    val density = context.resources.displayMetrics.density
+    val size = (32 * density).toInt().coerceAtLeast(32)
+    val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(bitmap)
+    canvas.scale(size / 32f, size / 32f)
+    val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.WHITE
+        setShadowLayer(2.5f, 0f, 1.5f, 0x66000000)
+    }
+    canvas.drawCircle(16f, 16f, 13f, paint)
+    paint.clearShadowLayer()
+    paint.color = 0xFF4285F4.toInt()
+    canvas.drawCircle(16f, 16f, 10f, paint)
+    return IconFactory.getInstance(context).fromBitmap(bitmap)
 }
 
 /**

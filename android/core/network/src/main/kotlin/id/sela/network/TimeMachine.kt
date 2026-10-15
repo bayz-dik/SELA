@@ -8,6 +8,10 @@ import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.cos
+import kotlin.math.sin
+import kotlin.math.sqrt
+import kotlin.math.asin
+import kotlin.math.pow
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -18,7 +22,9 @@ import kotlinx.coroutines.launch
  * Time machine (fitur #81): arsip posisi kendaraan + ekstrapolasi kasar.
  *
  * - [start]: setiap data kendaraan berubah, simpan snapshot (throttle 60 dtk,
- *   retensi 7 hari). Snapshot dipakai [atTime] dan [DisruptionMonitor].
+ *   retensi 7 hari). B18: hanya kendaraan yang posisinya berubah > [MIN_MOVE_METERS]
+ *   dari snapshot terakhirnya yang di-insert — bus ngetem/parkir tidak
+ *   menulis baris berulang. Snapshot dipakai [atTime] dan [DisruptionMonitor].
  * - [atTime]: posisi bus pada waktu lampau — snapshot terdekat per kendaraan
  *   dalam ±5 menit dari [ts]. Kalau tidak ada snapshot, daftar kosong.
  * - [predictAhead]: "prediksi" posisi N menit ke depan dengan ekstrapolasi
@@ -38,6 +44,14 @@ class TimeMachine @Inject constructor(
         const val SNAPSHOT_THROTTLE_MS = 60_000L
         const val RETENTION_MS = 7L * 24 * 60 * 60 * 1000
         const val AT_TIME_WINDOW_MS = 5 * 60 * 1000L
+
+        /**
+         * B18: kendaraan hanya ditulis ke DB kalau posisinya berubah lebih dari
+         * ini (meter) dibanding snapshot terakhir yang tersimpan untuk
+         * kendaraan itu. 10 m cukup untuk merekam pergerakan nyata tanpa
+         * memasukkan noise jitter GPS ke dalam DB.
+         */
+        const val MIN_MOVE_METERS = 10.0
 
         /**
          * Ekstrapolasi linear posisi kendaraan [minutes] menit ke depan.
@@ -61,6 +75,9 @@ class TimeMachine @Inject constructor(
     private var job: Job? = null
     private var lastSnapshotAt = 0L
 
+    /** Posisi terakhir yang ditulis ke DB per vehicleId (lat, lon) — untuk filter B18. */
+    private val lastSavedPositions = mutableMapOf<String, DoubleArray>()
+
     fun start() {
         if (job != null) return
         job = scope.launch {
@@ -71,22 +88,46 @@ class TimeMachine @Inject constructor(
                     val now = System.currentTimeMillis()
                     if (vehicles.isEmpty() || now - lastSnapshotAt < SNAPSHOT_THROTTLE_MS) return@collect
                     lastSnapshotAt = now
+                    // B18: insert hanya kendaraan yang bergerak signifikan sejak
+                    // snapshot terakhirnya — cegah DB bloat dari armada ngetem.
+                    val moved = vehicles.filter { v ->
+                        val prev = lastSavedPositions[v.id]
+                        prev == null || distanceMeters(prev[0], prev[1], v.lat, v.lon) > MIN_MOVE_METERS
+                    }
                     runCatching {
-                        snapshotDao.insertAll(
-                            vehicles.map { v ->
-                                VehicleSnapshotEntity(
-                                    vehicleId = v.id,
-                                    routeId = v.routeId,
-                                    lat = v.lat,
-                                    lon = v.lon,
-                                    timestamp = now,
-                                )
-                            },
-                        )
+                        if (moved.isNotEmpty()) {
+                            snapshotDao.insertAll(
+                                moved.map { v ->
+                                    VehicleSnapshotEntity(
+                                        vehicleId = v.id,
+                                        routeId = v.routeId,
+                                        lat = v.lat,
+                                        lon = v.lon,
+                                        timestamp = now,
+                                    )
+                                },
+                            )
+                            moved.forEach { v ->
+                                lastSavedPositions[v.id] = doubleArrayOf(v.lat, v.lon)
+                            }
+                        }
                         snapshotDao.prune(now - RETENTION_MS)
                     }
                 }
         }
+    }
+
+    /**
+     * B18: jarak great-circle (haversine) dalam meter.
+     * Fungsi murni — bisa di-unit-test.
+     */
+    internal fun distanceMeters(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
+        val r = 6_371_000.0
+        val dLat = Math.toRadians(lat2 - lat1)
+        val dLon = Math.toRadians(lon2 - lon1)
+        val a = sin(dLat / 2).pow(2) +
+            cos(Math.toRadians(lat1)) * cos(Math.toRadians(lat2)) * sin(dLon / 2).pow(2)
+        return 2 * r * asin(sqrt(a))
     }
 
     /**

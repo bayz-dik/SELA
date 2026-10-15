@@ -104,10 +104,13 @@ object KonduktorAi {
             return "Belum ada data bus live. Tunggu sebentar sampai koneksi MQTT nyambung."
         }
 
-        // Cari kode bus/rute dari query (misal "1A", "koridor 1", "jak 46")
+        // Cari kode bus/rute dari query (misal "1A", "koridor 1", "jak 46").
+        // B34: cocokkan sebagai kata UTUH (word boundary) supaya "koridor 10"
+        // tidak cocok dengan rute "1".
         val queryUpper = q.uppercase()
         val matched = ctx.vehicles.filter { v ->
-            queryUpper.contains(v.id.uppercase()) || queryUpper.contains(v.routeId.uppercase())
+            containsWholeToken(queryUpper, v.id.uppercase()) ||
+                containsWholeToken(queryUpper, v.routeId.uppercase())
         }
 
         val candidates = if (matched.isNotEmpty()) matched else ctx.vehicles
@@ -123,6 +126,16 @@ object KonduktorAi {
             "%.1f km".format(distM / 1000)
         }
         return "Bus ${nearest.id} (rute ${nearest.routeId}) sekitar $distText dari kamu."
+    }
+
+    /**
+     * B34 — cocokkan [token] sebagai kata utuh di [query] (word boundary di
+     * kedua sisi). Mencegah "10" cocok dengan rute "1", atau "21" cocok
+     * dengan bus "1".
+     */
+    private fun containsWholeToken(query: String, token: String): Boolean {
+        if (token.isBlank()) return false
+        return Regex("\\b${Regex.escape(token)}\\b").containsMatchIn(query)
     }
 
     /**

@@ -2,9 +2,11 @@ package id.sela.feature.map
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Navigation
+import androidx.compose.material.icons.filled.Satellite
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -14,7 +16,7 @@ import id.sela.designsystem.SelaPalette
 
 /**
  * HUD khusus mode 3D (§9 spec): toggle 2D/3D, Free/Follow, recenter, reset kompas.
- * Tidak tampil di mode 2D kecuali tombol masuk 3D. 2D tetap tidak berubah.
+ * Toggle style gelap ↔ satelit (B20) tampil di semua mode. 2D tetap tidak berubah.
  */
 @Composable
 fun Map3dHud(
@@ -24,6 +26,10 @@ fun Map3dHud(
     onToggleFollow: () -> Unit,
     onRecenter: () -> Unit,
     onResetBearing: () -> Unit,
+    /** B20: toggle style peta gelap ↔ satelit. */
+    onToggleStyle: () -> Unit = {},
+    /** B20: true bila style satelit sedang aktif. */
+    isSatellite: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -31,6 +37,16 @@ fun Map3dHud(
         horizontalAlignment = Alignment.End,
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
+        // B20: toggle style gelap ↔ satelit — tampil di semua mode, tombol existing tidak dihapus.
+        FilledTonalButton(onClick = onToggleStyle) {
+            Icon(
+                if (isSatellite) Icons.Filled.DarkMode else Icons.Filled.Satellite,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+            )
+            Spacer(Modifier.width(6.dp))
+            Text(if (isSatellite) "Gelap" else "Satelit")
+        }
         if (!mode.is3d) {
             // Tombol masuk 3D — satu-satunya elemen HUD yang tampil di 2D.
             Button(

@@ -131,18 +131,33 @@ public static class SceneBootstrapper
 
     private static void EnsureUrPipeline()
     {
-        // Cari URP asset yang sudah ada, atau buat default
+        // Cari URP asset yang sudah ada, atau buat default — lalu pastikan
+        // ter-assign ke GraphicsSettings (tanpa ini render pipeline tidak aktif).
+        UniversalRenderPipelineAsset pipeline = null;
         string[] guids = AssetDatabase.FindAssets("t:UniversalRenderPipelineAsset");
         if (guids.Length > 0)
         {
+            pipeline = AssetDatabase.LoadAssetAtPath<UniversalRenderPipelineAsset>(
+                AssetDatabase.GUIDToAssetPath(guids[0]));
             Debug.Log("[SELA] URP asset ditemukan, dipakai yang ada.");
-            return;
         }
-        // Buat URP asset default via ScriptableObject
-        var pipeline = ScriptableObject.CreateInstance<UniversalRenderPipelineAsset>();
-        System.IO.Directory.CreateDirectory("Assets/Settings");
-        AssetDatabase.CreateAsset(pipeline, "Assets/Settings/URP-Balanced.asset");
-        Debug.Log("[SELA] URP asset default dibuat.");
+        else
+        {
+            // Buat URP asset default via ScriptableObject
+            pipeline = ScriptableObject.CreateInstance<UniversalRenderPipelineAsset>();
+            System.IO.Directory.CreateDirectory("Assets/Settings");
+            AssetDatabase.CreateAsset(pipeline, "Assets/Settings/URP-Balanced.asset");
+            Debug.Log("[SELA] URP asset default dibuat.");
+        }
+        if (pipeline != null)
+        {
+            GraphicsSettings.renderPipelineAsset = pipeline;
+            Debug.Log("[SELA] GraphicsSettings.renderPipelineAsset di-assign.");
+        }
+        else
+        {
+            Debug.LogError("[SELA] Gagal mendapatkan URP asset!");
+        }
     }
 
     private static void SetupPostProcessing()

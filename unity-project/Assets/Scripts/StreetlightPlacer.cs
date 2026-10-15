@@ -21,6 +21,7 @@ public class StreetlightPlacer : MonoBehaviour
     public Material glowMaterial; // additive, untuk sprite cahaya
 
     private List<GameObject> lights = new List<GameObject>();
+    private Camera cachedMainCam;
 
     public void PlaceAlongRoads(List<JakartaSceneBuilder.RoadSegment> roads, System.Random rng)
     {
@@ -72,10 +73,26 @@ public class StreetlightPlacer : MonoBehaviour
         {
             glowMaterial = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
             glowMaterial.color = new Color(1f, 0.8f, 0.45f, 1f);
-            // NOTE: untuk additive blending yang benar, set via URP material:
-            // surface type = transparent, blending = additive.
-            // Dilakukan di Editor; di sini fallback ke opaque warm.
         }
+        // Setup additive blending via kode: glow harus transparan-additive,
+        // bukan kotak kuning opaque. Berlaku juga untuk material dari Inspector.
+        SetupAdditiveGlow(glowMaterial);
+    }
+
+    /// <summary>
+    /// Ubah material glow menjadi additive: SrcAlpha + One, tanpa Z-write,
+    /// render queue transparan. Tanpa ini glow tampil sebagai quad kuning solid.
+    /// </summary>
+    private static void SetupAdditiveGlow(Material mat)
+    {
+        if (mat == null) return;
+        mat.SetFloat("_Surface", 1f); // URP: 0=opaque, 1=transparent
+        mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+        mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.One);
+        mat.SetInt("_ZWrite", 0);
+        mat.DisableKeyword("_ALPHATEST_ON");
+        mat.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+        mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
     }
 
     private void PlaceSingle(Vector3 pos, System.Random rng)
@@ -94,7 +111,8 @@ public class StreetlightPlacer : MonoBehaviour
         pole.transform.SetParent(go.transform);
         pole.transform.localPosition = new Vector3(0, poleHeight / 2, 0);
         pole.transform.localScale = new Vector3(0.25f, poleHeight, 0.25f);
-        pole.GetComponent<Renderer>().material = poleMaterial;
+        // sharedMaterial: .material akan menduplikasi material per lampu (2500+ instance).
+        pole.GetComponent<Renderer>().sharedMaterial = poleMaterial;
 
         // Kepala lampu (kapsul horizontal)
         var head = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -102,7 +120,7 @@ public class StreetlightPlacer : MonoBehaviour
         head.transform.SetParent(go.transform);
         head.transform.localPosition = new Vector3(0, poleHeight, 0);
         head.transform.localScale = new Vector3(1.2f, 0.25f, 0.5f);
-        head.GetComponent<Renderer>().material = glowMaterial;
+        head.GetComponent<Renderer>().sharedMaterial = glowMaterial;
 
         // Glow billboard (selalu menghadap kamera)
         var glow = GameObject.CreatePrimitive(PrimitiveType.Quad);
@@ -111,14 +129,17 @@ public class StreetlightPlacer : MonoBehaviour
         glow.transform.localPosition = new Vector3(0, poleHeight - 0.3f, 0);
         glow.transform.localScale = new Vector3(4f, 4f, 1f);
         var gr = glow.GetComponent<Renderer>();
-        gr.material = glowMaterial;
+        gr.sharedMaterial = glowMaterial;
         // Hapus collider yang tidak perlu.
         // NB: pakai GetComponent(string) agar kompilasi tidak butuh modul Physics.
         Destroy(glow.GetComponent("Collider"));
 
-        // Billboard behavior via script ringan
+        // Billboard glow: didaftarkan ke BillboardGlowManager yang mengupdate
+        // SEMUA glow dalam satu loop per frame (bukan 2500+ LateUpdate individu).
         var bb = glow.AddComponent<BillboardGlow>();
-        bb.targetCamera = Camera.main;
+        if (cachedMainCam == null) cachedMainCam = Camera.main; // cache sekali
+        bb.targetCamera = cachedMainCam;
+        BillboardGlowManager.Ensure(gameObject);
 
         go.transform.position = pos;
         lights.Add(go);
@@ -150,15 +171,68 @@ public class StreetlightPlacer : MonoBehaviour
     }
 }
 
-/// <summary>Quad glow selalu menghadap kamera.</summary>
+/// <summary>
+/// Penanda quad glow agar dirotasi menghadap kamera oleh BillboardGlowManager.
+/// Mendaftarkan diri ke daftar statis; TIDAK punya LateUpdate sendiri
+/// (sebelumnya 2500+ LateUpdate individual per frame).
+/// </summary>
 public class BillboardGlow : MonoBehaviour
 {
     public Camera targetCamera;
+
+    internal static readonly System.Collections.Generic.List<BillboardGlow> all =
+        new System.Collections.Generic.List<BillboardGlow>();
+
+    void OnEnable()
+    {
+        if (!all.Contains(this)) all.Add(this);
+    }
+
+    void OnDisable()
+    {
+        all.Remove(this);
+    }
+}
+
+/// <summary>
+/// Satu-satunya LateUpdate untuk semua glow: iterasi daftar BillboardGlow
+/// dalam satu loop, kamera di-cache sekali per frame.
+/// </summary>
+public class BillboardGlowManager : MonoBehaviour
+{
+    private Camera cachedCam;
+
+    /// <summary>Pastikan satu manager ada di GameObject induk.</summary>
+    public static void Ensure(GameObject host)
+    {
+        if (host.GetComponent<BillboardGlowManager>() == null)
+            host.AddComponent<BillboardGlowManager>();
+    }
+
     void LateUpdate()
     {
-        if (targetCamera == null) targetCamera = Camera.main;
-        if (targetCamera == null) return;
-        transform.LookAt(transform.position + targetCamera.transform.rotation * Vector3.forward,
-            targetCamera.transform.rotation * Vector3.up);
+        if (BillboardGlow.all.Count == 0) return;
+        if (cachedCam == null) cachedCam = Camera.main;
+        if (cachedCam == null) return;
+
+        var camRot = cachedCam.transform.rotation;
+        var camFwd = camRot * Vector3.forward;
+        var camUp = camRot * Vector3.up;
+
+        foreach (var b in BillboardGlow.all)
+        {
+            if (b == null || !b.isActiveAndEnabled) continue;
+            var t = b.transform;
+            if (b.targetCamera != null && b.targetCamera != cachedCam)
+            {
+                // Glow dengan kamera target eksplisit yang berbeda
+                var r = b.targetCamera.transform.rotation;
+                t.LookAt(t.position + r * Vector3.forward, r * Vector3.up);
+            }
+            else
+            {
+                t.LookAt(t.position + camFwd, camUp);
+            }
+        }
     }
 }

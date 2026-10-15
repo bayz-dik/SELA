@@ -107,10 +107,10 @@ class MqttVehicleClient @Inject constructor(
         val parts = topic.split("/")
         if (parts.size < 6) return null
 
-        val route = (json.get("route_code")?.asString ?: parts.getOrNull(3) ?: return null).uppercase()
-        val busId = json.get("bus_body_no")?.asString?.takeIf { it.isNotBlank() }
+        val route = (json.get("route_code")?.asStringOrNull() ?: parts.getOrNull(3) ?: return null).uppercase()
+        val busId = json.get("bus_body_no")?.asStringOrNull()?.takeIf { it.isNotBlank() }
             ?: parts.getOrNull(5) ?: return null
-        val tripId = json.get("trip_id")?.asString ?: parts.getOrNull(4)
+        val tripId = json.get("trip_id")?.asStringOrNull() ?: parts.getOrNull(4)
 
         // Prefer snapped coordinates, fallback to raw
         val lat = json.get("snap_latitude")?.asDoubleOrNull()
@@ -127,8 +127,8 @@ class MqttVehicleClient @Inject constructor(
             (((it % 360) + 360) % 360).toFloat()
         } ?: 0f
 
-        val timestamp = json.get("gps_timestamp")?.asString
-            ?: json.get("timestamp")?.asString
+        val timestamp = json.get("gps_timestamp")?.asStringOrNull()
+            ?: json.get("timestamp")?.asStringOrNull()
             ?: java.time.Instant.now().toString()
 
         return MqttVehicle(
@@ -141,6 +141,23 @@ class MqttVehicleClient @Inject constructor(
             tripId = tripId,
         )
     }
+
+    /**
+     * B17: versi aman dari [com.google.gson.JsonElement.getAsString] — tidak
+     * melempar [UnsupportedOperationException] bila field = JsonNull,
+     * dan mengembalikan null untuk primitif non-string (number/boolean)
+     * maupun object/array. Mengikuti pola [asDoubleOrNull] di bawah.
+     */
+    private fun com.google.gson.JsonElement.asStringOrNull(): String? = try {
+        when {
+            isJsonNull -> null
+            isJsonPrimitive -> {
+                val prim = asJsonPrimitive
+                if (prim.isString) prim.asString else null
+            }
+            else -> null
+        }
+    } catch (_: Exception) { null }
 
     private fun com.google.gson.JsonElement.asDoubleOrNull(): Double? = try {
         when {

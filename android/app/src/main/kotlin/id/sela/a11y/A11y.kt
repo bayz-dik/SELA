@@ -2,12 +2,17 @@ package id.sela.a11y
 
 import android.content.Context
 import android.content.res.Configuration
+import android.os.Handler
+import android.os.Looper
+import android.speech.tts.TextToSpeech
+import android.speech.tts.UtteranceProgressListener
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import id.sela.network.SelaPrefs
+import java.util.Locale
 
 /**
  * Mode aksesibilitas SELA (fitur #66 tunanetra, #121 kids mode, #122 elderly mode).
@@ -76,12 +81,53 @@ fun TtsAnnouncer(
 /**
  * Umumkan ETA lewat TTS Bahasa Indonesia (fitur #66).
  * Panggil dari UI saat pengguna memilih halte dan mode = "tunanetra".
+ *
+ * TTS satu-kali: engine dibuat, bicara dijadwalkan SETELAH init selesai
+ * (init TTS itu asinkron — bicara langsung setelah konstruksi akan hilang),
+ * lalu [TextToSpeech.shutdown] dipanggil saat ucapan selesai/gagal supaya
+ * service connection tidak bocor. Ada pengaman shutdown paksa setelah
+ * 60 detik seandainya listener tidak pernah terpanggil.
+ * (Untuk pemakaian intensif/berulang, pakai [TtsAnnouncer] yang me-reuse
+ * satu instance [SelaTts].)
  */
 fun announceEta(context: Context, stopName: String, etaMinutes: Int) {
-    // TTS satu-kali: dibuat, dipakai, langsung dibuang setelah bicara.
-    // (Untuk pemakaian intensif, simpan instance SelaTts di ViewModel.)
-    val tts = SelaTts(context)
-    tts.speakEta(stopName, etaMinutes)
-    // Catatan: shutdown() TIDAK dipanggil di sini karena speak() asinkron;
-    // biarkan GC + lifecycle process. Untuk pemakaian berulang, pakai TtsAnnouncer.
+    val appCtx = context.applicationContext
+    val text = IndonesianPack.etaAnnouncement(stopName, etaMinutes)
+    val utteranceId = "sela-eta-${System.currentTimeMillis()}"
+    var engine: TextToSpeech? = null
+    val release: (TextToSpeech?) -> Unit = { t ->
+        runCatching { t?.stop() }
+        runCatching { t?.shutdown() }
+    }
+    engine = TextToSpeech(appCtx) { status ->
+        val tts = engine
+        if (status != TextToSpeech.SUCCESS || tts == null) {
+            release(tts)
+            return@TextToSpeech
+        }
+        val langResult = tts.setLanguage(Locale("id", "ID"))
+        val langOk = langResult == TextToSpeech.LANG_AVAILABLE ||
+            langResult == TextToSpeech.LANG_COUNTRY_AVAILABLE ||
+            langResult == TextToSpeech.LANG_COUNTRY_VAR_AVAILABLE
+        if (!langOk) {
+            release(tts)
+            return@TextToSpeech
+        }
+        tts.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+            override fun onStart(utteranceId: String) = Unit
+            override fun onDone(doneId: String) {
+                if (doneId == utteranceId) release(tts)
+            }
+            @Suppress("DEPRECATION", "OverridingDeprecatedMember")
+            override fun onError(utteranceId: String) {
+                release(tts)
+            }
+            override fun onError(utteranceId: String, errorCode: Int) {
+                release(tts)
+            }
+        })
+        tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, utteranceId)
+        // Pengaman: paksa shutdown setelah 60 detik bila listener tak jalan.
+        Handler(Looper.getMainLooper()).postDelayed({ release(tts) }, 60_000)
+    }
 }

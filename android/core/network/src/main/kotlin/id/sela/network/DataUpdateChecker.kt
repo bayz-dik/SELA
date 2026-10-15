@@ -24,7 +24,8 @@ import javax.inject.Singleton
  * [LocalGtfsRepository] otomatis memakainya (override atas assets).
  *
  * Default: URL kosong → pembaruan otomatis MATI, app 100% pakai data bawaan.
- * Tidak ada data pengguna yang dikirim ke mana pun; ini hanya unduhan HTTP biasa.
+ * Tidak ada data pengguna yang dikirim ke mana pun; ini hanya unduhan HTTPS biasa.
+ * URL non-HTTPS selalu ditolak (anti-MITM, B33).
  */
 @Singleton
 class DataUpdateChecker @Inject constructor(
@@ -51,6 +52,15 @@ class DataUpdateChecker @Inject constructor(
         val base = preferences.gtfsUpdateUrl.first().trim().trimEnd('/')
         if (base.isEmpty()) {
             return@withContext CheckResult(false, false, null, "URL pembaruan belum diisi — memakai data bawaan.")
+        }
+        // B33: URL pembaruan non-HTTPS rentan MITM (file GTFS bisa diganti).
+        // Tolak sebelum unduhan apa pun — jangan download.
+        val scheme = runCatching { java.net.URI(base).scheme }.getOrNull()?.lowercase()
+        if (scheme != "https") {
+            return@withContext CheckResult(
+                true, false, null,
+                "URL pembaruan ditolak: harus HTTPS (demi keamanan). URL saat ini memakai '${scheme ?: "skema tak dikenal"}'.",
+            )
         }
         try {
             val manifest = downloadJson("$base/version.json")

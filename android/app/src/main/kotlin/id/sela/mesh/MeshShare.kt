@@ -16,6 +16,7 @@ import com.google.android.gms.nearby.connection.PayloadCallback
 import com.google.android.gms.nearby.connection.PayloadTransferUpdate
 import com.google.android.gms.nearby.connection.Strategy
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
@@ -44,7 +45,9 @@ class MeshShare @Inject constructor(
     }
 
     private val client: ConnectionsClient by lazy { Nearby.getConnectionsClient(context) }
-    private val peers = mutableMapOf<String, String>() // endpointId -> nama HP
+    // B30-minor: diakses lintas thread (callback Nearby di thread binder +
+    // UI/main via scope) → ConcurrentHashMap supaya tidak race/corrupt.
+    private val peers = ConcurrentHashMap<String, String>() // endpointId -> nama HP
 
     private val payloadCallback = object : PayloadCallback() {
         var onPayload: ((String, String) -> Unit)? = null

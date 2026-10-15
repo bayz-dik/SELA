@@ -43,7 +43,9 @@ public class SelaBridge : MonoBehaviour
         MapController.Instance?.SetStops(data.stops);
     }
 
-    // {"routes":[{id,color,points:[[lat,lon],...]}]}
+    // {"routes":[{id,color,points:[{lat,lon},...]}]}
+    // NB: points memakai array objek (bukan array-of-array) karena
+    // JsonUtility tidak mendukung jagged array (double[][]).
     public void SetRoutes(string json)
     {
         var data = JsonUtility.FromJson<RoutesMsg>(json);
@@ -84,14 +86,14 @@ public class SelaBridge : MonoBehaviour
     public void SelectStop(string json)
     {
         var s = JsonUtility.FromJson<SelectMsg>(json);
-        MapController.Instance?.GetComponent<StopMarkerManager>()?.SelectStop(s?.id);
+        MapController.Instance?.stopMarkers?.SelectStop(s?.id);
     }
 
     // {"routeId":"..."} — pilih rute
     public void SelectRoute(string json)
     {
         var s = JsonUtility.FromJson<SelectMsg>(json);
-        MapController.Instance?.GetComponent<RouteRenderer>()?.SelectRoute(s?.id);
+        MapController.Instance?.routeRenderer?.SelectRoute(s?.id);
     }
 
     // ---------- Unity -> Kotlin ----------
@@ -163,8 +165,10 @@ public class SelaBridge : MonoBehaviour
     { public string id; public string name; public double lat; public double lon; }
     [System.Serializable] public class StopsMsg { public StopDto[] stops; }
 
+    [System.Serializable] public class RoutePointDto
+    { public double lat; public double lon; }
     [System.Serializable] public class RouteDto
-    { public string id; public string color; public double[][] points; }
+    { public string id; public string color; public RoutePointDto[] points; }
     [System.Serializable] public class RoutesMsg { public RouteDto[] routes; }
 
     [System.Serializable] public class BusDto

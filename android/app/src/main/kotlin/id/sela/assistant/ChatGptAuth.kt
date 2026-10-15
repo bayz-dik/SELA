@@ -14,6 +14,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import org.json.JSONObject
@@ -89,6 +91,21 @@ object ChatGptAuth {
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+
+    /**
+     * B25 — mutex serialisasi refresh token (single-flight). Lihat
+     * [getAccessToken].
+     */
+    private val refreshMutex = Mutex()
+
+    /** B27 — hasil refresh yang membedakan error permanen vs transient. */
+    private sealed interface RefreshResult {
+        data class Ok(val tokens: Tokens) : RefreshResult
+        /** Gangguan sesaat (jaringan putus, timeout, HTTP 5xx): refresh token masih sah. */
+        data object Transient : RefreshResult
+        /** Refresh token ditolak server (HTTP 400/401, mis. invalid_grant): sesi mati. */
+        data object Permanent : RefreshResult
+    }
 
     @Volatile
     private var appContext: Context? = null
@@ -356,7 +373,7 @@ object ChatGptAuth {
     }
 
     /** Refresh access token memakai refresh token. */
-    private fun refreshTokens(refreshToken: String, issuedClientId: String): Tokens? {
+    private fun refreshTokens(refreshToken: String, issuedClientId: String): RefreshResult {
         return try {
             val body = listOf(
                 "grant_type" to "refresh_token",
@@ -364,10 +381,17 @@ object ChatGptAuth {
                 "refresh_token" to refreshToken,
                 "resource" to RESOURCE,
             ).joinToString("&") { (k, v) -> "$k=${URLEncoder.encode(v, "UTF-8")}" }
-            val json = postForm(TOKEN_URL, body) ?: return null
-            tokensFromJson(json)
+            val (json, code) = postFormWithCode(TOKEN_URL, body)
+            if (code !in 200..299 || json == null) {
+                // 400/401 = refresh token ditolak server secara permanen
+                // (mis. invalid_grant); sisanya = transient (jaringan/5xx).
+                if (code == 400 || code == 401) RefreshResult.Permanent else RefreshResult.Transient
+            } else {
+                val tokens = tokensFromJson(json)
+                if (tokens != null) RefreshResult.Ok(tokens) else RefreshResult.Transient
+            }
         } catch (_: Exception) {
-            null
+            RefreshResult.Transient
         }
     }
 
@@ -435,21 +459,62 @@ object ChatGptAuth {
         if (!access.isNullOrBlank() && System.currentTimeMillis() < expiresAt) {
             return@withContext access
         }
-        val refresh = saved.getString(KEY_REFRESH, null)
-        val issuedClientId = saved.getString(KEY_CLIENT_ID, null)
-        if (refresh.isNullOrBlank() || issuedClientId.isNullOrBlank()) {
-            withContext(Dispatchers.Main) { _authState.value = AuthState.LoggedOut }
-            return@withContext null
-        }
-        val tokens = refreshTokens(refresh, issuedClientId)
-        if (tokens == null) {
-            withContext(Dispatchers.Main) {
-                _authState.value = AuthState.Failed("Sesi kedaluwarsa. Login ulang ya.")
+        // B25 — serialisasi refresh (single-flight): hanya satu refresh yang
+        // jalan dalam satu waktu. Dua refresh bersamaan bisa memicu rotasi
+        // refresh-token di server yang menginvalidasi salah satunya dan
+        // memaksa user login ulang.
+        refreshMutex.withLock {
+            // Cek ulang setelah dapat lock: refresh lain mungkin baru selesai.
+            val fresh = loadPrefs() ?: return@withLock null
+            val freshAccess = fresh.getString(KEY_ACCESS, null)
+            val freshExpiresAt = fresh.getLong(KEY_EXPIRES_AT, 0)
+            if (!freshAccess.isNullOrBlank() && System.currentTimeMillis() < freshExpiresAt) {
+                return@withLock freshAccess
             }
-            return@withContext null
+            val refresh = fresh.getString(KEY_REFRESH, null)
+            val issuedClientId = fresh.getString(KEY_CLIENT_ID, null)
+            if (refresh.isNullOrBlank() || issuedClientId.isNullOrBlank()) {
+                withContext(Dispatchers.Main) { _authState.value = AuthState.LoggedOut }
+                return@withLock null
+            }
+            return@withLock when (val result = refreshTokens(refresh, issuedClientId)) {
+                is RefreshResult.Ok -> {
+                    saveTokens(result.tokens, issuedClientId)
+                    // B27 — refresh sukses → state LoggedIn, tidak pernah
+                    // sticky Failed dari kegagalan sebelumnya.
+                    withContext(Dispatchers.Main) { _authState.value = AuthState.LoggedIn }
+                    result.tokens.accessToken
+                }
+                RefreshResult.Transient -> {
+                    // B27 — error transient (jaringan putus sesaat, timeout,
+                    // 5xx): JANGAN set sticky Failed; biarkan state sebelumnya
+                    // apa adanya. Refresh token masih sah untuk percobaan
+                    // berikutnya.
+                    null
+                }
+                RefreshResult.Permanent -> {
+                    // Refresh token ditolak server (invalid_grant): sesi
+                    // benar-benar mati. Hapus token mati agar tidak dipakai
+                    // lagi; user perlu login ulang.
+                    logout()
+                    null
+                }
+            }
         }
-        saveTokens(tokens, issuedClientId)
-        tokens.accessToken
+    }
+
+    /**
+     * Hapus access token yang basi dari storage (dipakai [SelaAiClient] saat
+     * API mengembalikan 401/403). Refresh token dipertahankan agar
+     * [getAccessToken] berikutnya me-refresh sekali sebelum menyerah.
+     */
+    fun clearStaleAccessToken() {
+        runCatching {
+            prefs().edit()
+                .remove(KEY_ACCESS)
+                .remove(KEY_EXPIRES_AT)
+                .apply()
+        }
     }
 
     fun getAccountId(): String? =
@@ -471,7 +536,14 @@ object ChatGptAuth {
 
     // ---------- HTTP helpers (tanpa token di log) ----------
 
-    private fun postForm(url: String, body: String): JSONObject? {
+    private fun postForm(url: String, body: String): JSONObject? =
+        postFormWithCode(url, body).first
+
+    /**
+     * POST form-encoded; mengembalikan pasangan (JSON body, HTTP code).
+     * Code -1 berarti request gagal total (jaringan/exception).
+     */
+    private fun postFormWithCode(url: String, body: String): Pair<JSONObject?, Int> {
         var conn: HttpURLConnection? = null
         return try {
             conn = (URL(url).openConnection() as HttpURLConnection).apply {
@@ -482,19 +554,15 @@ object ChatGptAuth {
                 setRequestProperty("Content-Type", "application/x-www-form-urlencoded")
             }
             conn.outputStream.use { it.write(body.toByteArray(Charsets.UTF_8)) }
-            readJson(conn)
+            val code = conn.responseCode
+            if (code !in 200..299) return Pair(null, code)
+            val text = conn.inputStream.bufferedReader().readText()
+            Pair(runCatching { JSONObject(text) }.getOrNull(), code)
         } catch (_: Exception) {
-            null
+            Pair(null, -1)
         } finally {
             conn?.disconnect()
         }
-    }
-
-    private fun readJson(conn: HttpURLConnection): JSONObject? {
-        val code = conn.responseCode
-        if (code !in 200..299) return null
-        val text = conn.inputStream.bufferedReader().readText()
-        return runCatching { JSONObject(text) }.getOrNull()
     }
 
     // ---------- JWT ----------

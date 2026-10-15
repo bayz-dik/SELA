@@ -116,6 +116,9 @@ public class MapController : MonoBehaviour
         camTargetPitch = Mathf.Clamp(cam.pitch, 0f, 75f);
         camAnimating = true;
 
+        // Beri tahu StopMarkerManager agar clustering mengikuti zoom baru
+        if (stopMarkers != null) stopMarkers.SetZoom(zoom);
+
         Debug.Log($"[MapController] Kamera -> lat={cam.lat:F5} lon={cam.lon:F5} " +
                   $"zoom={zoom} bearing={cam.bearing} pitch={cam.pitch} mode={cameraMode}");
     }

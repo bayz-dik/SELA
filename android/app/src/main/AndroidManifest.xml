@@ -41,18 +41,15 @@
                 <action android:name="android.service.quicksettings.action.QS_TILE" />
             </intent-filter>
         </service>
-        <!-- OAuth ChatGPT untuk "Tanya Sela" (sela://oauth/callback) -->
+        <!-- OAuth ChatGPT untuk "Tanya Sela" (sela://oauth/callback) — DINONAKTIFKAN (audit #21).
+             Deep link sela:// tidak dipakai lagi; activity dimatikan di manifest agar tidak
+             jadi attack surface (enabled=false + exported=false, intent-filter dihapus).
+             File Activity (.assistant.OAuthCallbackActivity) tetap ada, tidak dihapus. -->
         <activity android:name=".assistant.OAuthCallbackActivity"
-            android:exported="true"
+            android:enabled="false"
+            android:exported="false"
             android:launchMode="singleTask"
             android:noHistory="true"
-            android:theme="@android:style/Theme.Translucent.NoTitleBar">
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="sela" android:host="oauth" android:path="/callback" />
-            </intent-filter>
-        </activity>
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
     </application>
 </manifest>

@@ -86,7 +86,19 @@ private fun StopPicker(
     selected: Stop?,
     onSelect: (Stop?) -> Unit,
 ) {
-    var query by remember(selected?.id) { mutableStateOf(selected?.name.orEmpty()) }
+    // B24: state teks DIPISAH dari selection — remember TIDAK di-key dengan
+    // selected?.id agar draft ketikan tidak ter-reset saat user mengoreksi teks.
+    var query by remember { mutableStateOf(selected?.name.orEmpty()) }
+    // Penanda: selection menjadi null karena user sedang mengetik (bukan aksi
+    // luar) — dalam kasus ini draft ketikan dipertahankan.
+    var typingCleared by remember { mutableStateOf(false) }
+    // Sinkronkan teks hanya untuk perubahan pilihan dari luar (mis. tombol Tukar).
+    LaunchedEffect(selected?.id) {
+        if (selected != null || !typingCleared) {
+            query = selected?.name.orEmpty()
+        }
+        typingCleared = false
+    }
     val suggestions = remember(query, stops) {
         if (query.isBlank()) emptyList()
         else stops.filter { it.name.contains(query, ignoreCase = true) }.take(8)
@@ -94,7 +106,13 @@ private fun StopPicker(
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         OutlinedTextField(
             value = query,
-            onValueChange = { query = it; if (selected != null && it != selected.name) onSelect(null) },
+            onValueChange = {
+                query = it
+                if (selected != null && it != selected.name) {
+                    typingCleared = true
+                    onSelect(null)
+                }
+            },
             label = { Text(label) },
             placeholder = { Text("Ketik nama halte…") },
             trailingIcon = {

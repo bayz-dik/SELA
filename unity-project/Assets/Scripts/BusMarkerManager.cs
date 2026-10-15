@@ -69,12 +69,9 @@ public class BusMarkerManager : MonoBehaviour
 
     private Color ColorFor(string routeId)
     {
-        if (string.IsNullOrEmpty(routeId)) return CorridorColors["default"];
-        // Koridor 1-13 = BRT
-        if (routeId.StartsWith("1") || routeId == "2" || routeId == "3")
-            return CorridorColors["BRT"];
-        if (routeId.StartsWith("JAK", System.StringComparison.OrdinalIgnoreCase))
-            return CorridorColors["JakLingko"];
+        // Klasifikasi terpusat (CorridorClassifier) — konsisten dengan RouteRenderer.
+        if (CorridorClassifier.IsBrt(routeId)) return CorridorColors["BRT"];
+        if (CorridorClassifier.IsJakLingko(routeId)) return CorridorColors["JakLingko"];
         return CorridorColors["default"];
     }
 }
@@ -85,7 +82,38 @@ public class BusMarker : MonoBehaviour
     private Vector3 targetPos;
     private float targetHeading;
     private bool hasTarget;
-    private Material mat;
+
+    // Material shared per warna koridor: dibuat sekali, dipakai semua bus.
+    // (Tidak lagi `new Material` per bus — sebelumnya bocor saat bus dihapus.)
+    private static readonly Dictionary<Color, Material> SharedBodyMaterials =
+        new Dictionary<Color, Material>();
+    private static Material sharedGlassMaterial;
+
+    private static Material BodyMaterial(Color color)
+    {
+        if (!SharedBodyMaterials.TryGetValue(color, out var mat) || mat == null)
+        {
+            mat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+            mat.color = color;
+            mat.SetFloat("_Smoothness", 0.6f);
+            // Emissive ringan agar terlihat di malam hari
+            mat.SetColor("_EmissionColor", color * 0.35f);
+            mat.EnableKeyword("_EMISSION");
+            SharedBodyMaterials[color] = mat;
+        }
+        return mat;
+    }
+
+    private static Material GlassMaterial()
+    {
+        if (sharedGlassMaterial == null)
+        {
+            sharedGlassMaterial = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+            sharedGlassMaterial.color = new Color(0.05f, 0.07f, 0.10f);
+            sharedGlassMaterial.SetFloat("_Smoothness", 0.9f);
+        }
+        return sharedGlassMaterial;
+    }
 
     public void Configure(float length, float width, float height, Color color)
     {
@@ -97,13 +125,8 @@ public class BusMarker : MonoBehaviour
         // NB: GetComponent(string) agar kompilasi tidak butuh modul Physics.
         Destroy(body.GetComponent("Collider"));
 
-        mat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
-        mat.color = color;
-        mat.SetFloat("_Smoothness", 0.6f);
-        // Emissive ringan agar terlihat di malam hari
-        mat.SetColor("_EmissionColor", color * 0.35f);
-        mat.EnableKeyword("_EMISSION");
-        body.GetComponent<Renderer>().material = mat;
+        // sharedMaterial (bukan .material) agar tidak duplikat per bus.
+        body.GetComponent<Renderer>().sharedMaterial = BodyMaterial(color);
 
         // Kaca depan (strip gelap)
         var windshield = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -112,10 +135,7 @@ public class BusMarker : MonoBehaviour
         windshield.transform.localPosition = new Vector3(0, height / 2 + 1.2f, length / 2 - 0.1f);
         windshield.transform.localScale = new Vector3(width * 0.9f, 1f, 0.2f);
         Destroy(windshield.GetComponent("Collider"));
-        var glassMat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
-        glassMat.color = new Color(0.05f, 0.07f, 0.10f);
-        glassMat.SetFloat("_Smoothness", 0.9f);
-        windshield.GetComponent<Renderer>().material = glassMat;
+        windshield.GetComponent<Renderer>().sharedMaterial = GlassMaterial();
     }
 
     public void SetTarget(SelaBridge.BusDto bus, MapController mc)

@@ -27,6 +27,8 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import id.sela.designsystem.*
 import id.sela.feature.search.*
@@ -38,6 +40,35 @@ import kotlinx.coroutines.withTimeoutOrNull
 
 /** Style peta gelap OpenFreeMap — selaras tema Malam Kota. */
 private const val SELA_MAP_STYLE = "https://tiles.openfreemap.org/styles/dark"
+
+/**
+ * B20: style satelit — tile raster gratis ESRI World Imagery.
+ * MapLibre butuh objek style penuh (bukan tile URL mentah), jadi dibungkus
+ * JSON inline. Atribusi Esri tampil via uiSettings.isAttributionEnabled.
+ */
+private const val SELA_SATELLITE_STYLE = """
+{
+  "version": 8,
+  "name": "SELA Satelit",
+  "sources": {
+    "esri-imagery": {
+      "type": "raster",
+      "tiles": ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
+      "tileSize": 256,
+      "maxzoom": 19,
+      "attribution": "Imagery © Esri, Maxar, Earthstar Geographics"
+    }
+  },
+  "layers": [
+    { "id": "esri-imagery", "type": "raster", "source": "esri-imagery", "minzoom": 0, "maxzoom": 22 }
+  ]
+}
+"""
+
+/** B21: follow mode 2D (port dari web) — snap ke bus terdekat dalam radius ini. */
+private const val FOLLOW_SNAP_METERS = 30.0
+/** B21: follow mode 2D — lepas snap bus bila jarak user↔bus melebihi ini. */
+private const val FOLLOW_RELEASE_METERS = 60.0
 
 // ---------------------------------------------------------------------------
 // Bilah atas
@@ -52,6 +83,7 @@ fun ConnectionPill(status: ConnectionStatus, hasVehicles: Boolean) {
         ConnectionStatus.CONNECTING -> false to "Menghubungkan…"
         ConnectionStatus.RECONNECTING -> false to "Menyambung ulang…"
         ConnectionStatus.OFFLINE -> false to "Offline"
+        ConnectionStatus.ERROR -> false to "Akses ditolak"
     }
     Surface(
         shape = SelaTokens.pill,
@@ -291,10 +323,18 @@ fun MapScreen(
     val context = LocalContext.current
     val location = remember(context) { ForegroundLocation(context) }
     val scope = rememberCoroutineScope()
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
     var rationale by remember { mutableStateOf(false) }
     var panel by rememberSaveable { mutableStateOf<String?>(null) }
     var locationBusy by remember { mutableStateOf(false) }
     var nearby by remember { mutableStateOf<GeoPoint?>(null) }
+    // B20: pilihan style peta gelap ↔ satelit — disimpan antar rotasi.
+    var satellite by rememberSaveable { mutableStateOf(false) }
+    val mapStyle = if (satellite) SELA_SATELLITE_STYLE else SELA_MAP_STYLE
+    // B21: follow mode 2D — titik biru #4285f4, snap bus ≤30m, lepas >60m.
+    var followMode by rememberSaveable { mutableStateOf(false) }
+    var userPoint by remember { mutableStateOf<GeoPoint?>(null) }
+    var snappedBusId by remember { mutableStateOf<String?>(null) }
     // 3D Ultra: mode kamera (§7/§21 spec). 2D default, tidak berubah.
     var mapMode by rememberSaveable { mutableStateOf(MapMode.MAP_2D) }
     val is3d = mapMode.is3d
@@ -347,30 +387,116 @@ fun MapScreen(
             }
         }
     }
+    // B21: tombol Lokasi saya = toggle follow (port dari web). Tap pertama
+    // memusatkan ke user (perilaku locate lama tetap), tap kedua = follow mati.
+    fun toggleFollow() {
+        if (followMode) {
+            followMode = false
+            return
+        }
+        followMode = true
+        snappedBusId = null
+        scope.launch {
+            val point = withTimeoutOrNull(10_000) { location.current() }
+            if (point != null) {
+                userPoint = point
+                val cur = viewModel.uiState.value.camera
+                viewModel.flyTo(
+                    MapCamera(
+                        point.lat, point.lon,
+                        cur.zoom.coerceAtLeast(15.0),
+                        tilt = cur.tilt, bearing = cur.bearing,
+                    )
+                )
+            } else {
+                followMode = false
+                viewModel.message("Lokasi belum tersedia. Periksa izin dan layanan lokasi.")
+            }
+        }
+    }
     // 3D Ultra: Smart Follow — polling GPS tiap 3 dtk; batal otomatis saat mode berubah.
+    // B22: hanya polling saat app RESUMED — jangan jalan terus saat background.
     LaunchedEffect(mapMode) {
         if (mapMode == MapMode.MAP_3D_FOLLOW) {
             while (true) {
-                val point = withTimeoutOrNull(10_000) { location.current() }
-                if (point != null) {
-                    val cur = viewModel.uiState.value.camera
-                    viewModel.flyTo(
-                        MapCamera(
-                            point.lat, point.lon,
-                            cur.zoom.coerceAtLeast(MAP_3D_FOLLOW_MIN_ZOOM),
-                            tilt = MAP_3D_DEFAULT_TILT, bearing = cur.bearing,
+                if (lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
+                    val point = withTimeoutOrNull(10_000) { location.current() }
+                    if (point != null) {
+                        val cur = viewModel.uiState.value.camera
+                        viewModel.flyTo(
+                            MapCamera(
+                                point.lat, point.lon,
+                                cur.zoom.coerceAtLeast(MAP_3D_FOLLOW_MIN_ZOOM),
+                                tilt = MAP_3D_DEFAULT_TILT, bearing = cur.bearing,
+                            )
                         )
-                    )
+                    }
                 }
                 delay(3000)
             }
+        }
+    }
+    // B21: follow mode 2D — kamera mengikuti user; snap ke bus terdekat ≤30m,
+    // lepas snap bila jarak user↔bus >60m. Drag manual mematikan follow (onManualGesture).
+    // B22: polling hanya saat RESUMED.
+    LaunchedEffect(followMode) {
+        if (!followMode) {
+            snappedBusId = null
+            userPoint = null
+            return@LaunchedEffect
+        }
+        while (true) {
+            if (lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
+                val point = withTimeoutOrNull(10_000) { location.current() }
+                userPoint = point
+                if (point != null) {
+                    val vehicles = viewModel.uiState.value.vehicles.filter { !it.isStale }
+                    val followed = snappedBusId?.let { id -> vehicles.find { it.id == id } }
+                    val followedDist = followed?.let {
+                        EtaPredictor.haversineM(point.lat, point.lon, it.lat, it.lon)
+                    }
+                    val target: GeoPoint = if (
+                        followed != null && followedDist != null &&
+                        followedDist <= FOLLOW_RELEASE_METERS
+                    ) {
+                        // Masih snap ke bus yang sama.
+                        GeoPoint(followed.lat, followed.lon)
+                    } else {
+                        snappedBusId = null
+                        val nearest = vehicles.minByOrNull {
+                            EtaPredictor.haversineM(point.lat, point.lon, it.lat, it.lon)
+                        }
+                        val nearestDist = nearest?.let {
+                            EtaPredictor.haversineM(point.lat, point.lon, it.lat, it.lon)
+                        }
+                        if (nearest != null && nearestDist != null &&
+                            nearestDist <= FOLLOW_SNAP_METERS
+                        ) {
+                            snappedBusId = nearest.id
+                            GeoPoint(nearest.lat, nearest.lon)
+                        } else {
+                            point
+                        }
+                    }
+                    val cur = viewModel.uiState.value.camera
+                    viewModel.flyTo(
+                        MapCamera(
+                            target.lat, target.lon,
+                            cur.zoom.coerceAtLeast(15.0),
+                            tilt = cur.tilt, bearing = cur.bearing,
+                        )
+                    )
+                }
+            }
+            delay(3000)
         }
     }
     fun locate() {
         scope.launch {
             locationBusy = true
             try {
-                val point = location.current()
+                // B23: timeout 10 dtk — jangan spinner selamanya bila lokasi hang.
+                val point = withTimeoutOrNull(10_000) { location.current() }
                 if (point == null) viewModel.message("Lokasi belum tersedia. Periksa izin dan layanan lokasi.")
                 else { nearby = point; viewModel.recenter(point) }
             } finally { locationBusy = false }
@@ -383,7 +509,7 @@ fun MapScreen(
     Box(Modifier.fillMaxSize()) {
         MapCanvas(
             state,
-            SELA_MAP_STYLE,
+            mapStyle,
             Modifier.fillMaxSize().semantics { contentDescription = "Peta halte dan bus Jakarta. Gunakan daftar Halte atau Rute untuk akses pembaca layar." },
             viewModel::select,
             viewModel::camera,
@@ -392,7 +518,14 @@ fun MapScreen(
             show3dBuildings = effective3dBuildings,
             // 3D Ultra: tilt gesture hanya di mode 3D; gesture manual batalkan Follow → Free.
             tiltGesturesEnabled = is3d,
-            onManualGesture = { if (mapMode == MapMode.MAP_3D_FOLLOW) mapMode = MapMode.MAP_3D_FREE },
+            // B21: drag manual juga mematikan follow mode 2D.
+            onManualGesture = {
+                if (mapMode == MapMode.MAP_3D_FOLLOW) mapMode = MapMode.MAP_3D_FREE
+                if (followMode) followMode = false
+            },
+            // B21: titik biru #4285f4 posisi user saat follow mode aktif.
+            followActive = followMode,
+            userLocation = userPoint,
         )
 
         // 3D Ultra HUD (§9 spec) — kanan bawah, di atas dock melayang.
@@ -422,6 +555,9 @@ fun MapScreen(
                 val cur = viewModel.uiState.value.camera
                 viewModel.flyTo(cur.copy(bearing = 0.0))
             },
+            // B20: toggle style peta gelap ↔ satelit.
+            onToggleStyle = { satellite = !satellite },
+            isSatellite = satellite,
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .navigationBarsPadding()
@@ -558,7 +694,8 @@ fun MapScreen(
             ) {
                 ServiceLegend()
                 MapDock(
-                    onLocate = { if (location.hasPermission()) locate() else rationale = true },
+                    // B21: tombol Lokasi saya = toggle follow (port dari web).
+                    onLocate = { if (location.hasPermission()) toggleFollow() else rationale = true },
                     onRoutes = { panel = "routes" },
                     onStops = { panel = "stops" },
                     onFavorites = { panel = "favorites" },

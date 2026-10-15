@@ -17,7 +17,7 @@ val Route.displayServiceType: ServiceType get() = when {
     Regex("^(1[0-3]|[1-9])[A-Z]*$").matches(shortName.uppercase()) -> ServiceType.BRT
     else -> ServiceType.BUS
 }
-enum class ConnectionStatus { CONNECTING, LIVE, RECONNECTING, OFFLINE }
+enum class ConnectionStatus { CONNECTING, LIVE, RECONNECTING, OFFLINE, ERROR }
 data class Favorite(val id: String, val kind: String)
 /** Satu entri riwayat perjalanan (fitur #2). */
 data class TripHistory(

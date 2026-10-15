@@ -13,6 +13,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import org.eclipse.paho.client.mqttv3.MqttException
 import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -31,6 +32,11 @@ class StandaloneTransitRepository @Inject constructor(
     private val preferences: TransitPreferences,
     @TransitScope private val scope: CoroutineScope,
 ) : TransitRepository {
+    companion object {
+        /** B19: tiap pesan MQTT hanya memperbarui reconciler; UI di-emit maksimal 1x per 500 ms. */
+        private const val VEHICLE_EMIT_THROTTLE_MS = 500L
+    }
+
     private val mutableData = MutableStateFlow(TransitData(isLoading = true))
     override val data: StateFlow<TransitData> = mutableData.asStateFlow()
     override val serviceFilter: Flow<ServiceType?> = preferences.filter
@@ -108,11 +114,7 @@ class StandaloneTransitRepository @Inject constructor(
 
             try {
                 mqttClient.vehicles()
-                    .catch { e ->
-                        // Connection lost during streaming - will retry via outer loop
-                        throw e
-                    }
-                    .collect { mqttVehicle ->
+                    .onEach { mqttVehicle ->
                         // Reset backoff on successful message
                         attempt = 0
                         delayMs = 2000L
@@ -125,7 +127,12 @@ class StandaloneTransitRepository @Inject constructor(
                             speedKmh = mqttVehicle.speedKmh,
                             observedAt = mqttVehicle.observedAt,
                         )
+                        // B19: reconciler menerima SEMUA pesan (dedup/expiry tetap
+                        // akurat); yang dibatasi hanya pemancaran ke UI di bawah.
                         vehicles.update(vehicle)
+                    }
+                    .sample(VEHICLE_EMIT_THROTTLE_MS)
+                    .collect {
                         mutableData.update {
                             it.copy(
                                 vehicles = vehicles.values(),
@@ -140,6 +147,20 @@ class StandaloneTransitRepository @Inject constructor(
             } catch (e: Exception) {
                 // Don't retry if scope is cancelled
                 if (!scope.isActive) break
+
+                // B16: broker menolak koneksi (CONNACK rc=5 = akses ditolak).
+                // Retry selamanya tidak ada gunanya — hentikan loop dan
+                // tampilkan pesan jelas ke pengguna.
+                if (isMqttAccessDenied(e)) {
+                    mutableData.update {
+                        it.copy(
+                            connectionStatus = ConnectionStatus.ERROR,
+                            error = "Akses ditolak broker (CONNACK rc=5). Tidak mencoba lagi — periksa konfigurasi koneksi.",
+                        )
+                    }
+                    pushWidgetSnapshot(force = true)
+                    break
+                }
 
                 mutableData.update {
                     it.copy(
@@ -158,6 +179,24 @@ class StandaloneTransitRepository @Inject constructor(
                 delayMs = minOf(delayMs * 2, maxDelayMs)
             }
         }
+    }
+
+    /**
+     * B16: deteksi penolakan akses MQTT (CONNACK rc=5 / tidak diizinkan).
+     * Paho memetakan CONNACK 5 ke [MqttException.REASON_CODE_NOT_AUTHORIZED];
+     * beberapa jalur lain menampilkannya lewat pesan teks.
+     */
+    private fun isMqttAccessDenied(e: Throwable): Boolean {
+        var t: Throwable? = e
+        while (t != null) {
+            if (t is MqttException &&
+                (t.reasonCode == MqttException.REASON_CODE_NOT_AUTHORIZED || t.reasonCode == 5)
+            ) return true
+            val msg = t.message?.lowercase()
+            if (msg != null && ("not authorized" in msg || "rc=5" in msg)) return true
+            t = t.cause
+        }
+        return false
     }
 
     /** Dorong snapshot ringan untuk widget (fitur #95/#111), dibatasi 1x/30 dtk. */

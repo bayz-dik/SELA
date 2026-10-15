@@ -88,6 +88,9 @@ public class JakartaSceneBuilder : MonoBehaviour
         List<SelaBridge.StopDto> stops,
         List<SelaBridge.RouteDto> routes)
     {
+        // Guard: tanpa ini, kirim ulang data dari Kotlin = geometri dobel.
+        if (built) return;
+
         var map = MapController.Instance;
         if (map == null) { if (!built) BuildPreviewDistrict(); return; }
 
@@ -106,8 +109,8 @@ public class JakartaSceneBuilder : MonoBehaviour
                 var line = new List<Vector3>();
                 foreach (var pt in r.points)
                 {
-                    if (pt == null || pt.Length < 2) continue;
-                    var w = map.LatLonToWorld(pt[0], pt[1]);
+                    if (pt == null) continue;
+                    var w = map.LatLonToWorld(pt.lat, pt.lon);
                     // Filter ke dalam radius distrik
                     if (w.magnitude < districtRadius * 1.5f) line.Add(w);
                 }

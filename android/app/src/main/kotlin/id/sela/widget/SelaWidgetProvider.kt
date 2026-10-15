@@ -76,6 +76,7 @@ class SelaWidgetProvider : AppWidgetProvider() {
                     "LIVE" -> "Live"
                     "CONNECTING" -> "Menghubungkan…"
                     "RECONNECTING" -> "Menyambung ulang…"
+                    "ERROR" -> "Akses ditolak"
                     else -> "Offline"
                 }
                 val timeText = if (syncedAt > 0) {

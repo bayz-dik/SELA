@@ -43,6 +43,23 @@ public class StopMarkerManager : MonoBehaviour
     private string selectedId;
     private float currentZoom = 15f;
 
+    // Material shared: dibuat sekali, dipakai semua pin/label.
+    // (Sebelumnya `new Material` per marker — bocor setiap rebuild.)
+    private static Material sharedPinMat;
+    private static Material sharedPinSelectedMat;
+    private static Material sharedLabelMat;
+
+    // Tap-vs-drag: posisi saat jari/mouse ditekan
+    private Vector2 downPos;
+    private bool downTracked;
+    private const float TapMaxMovePx = 10f;
+
+    // Cache kamera: pin hanya dirotasi ulang saat kamera bergerak
+    private Camera cachedCam;
+    private Vector3 lastCamPos;
+    private Quaternion lastCamRot;
+    private bool camPoseInit;
+
     void Awake()
     {
         map = GetComponent<MapController>();
@@ -99,44 +116,70 @@ public class StopMarkerManager : MonoBehaviour
 
     void Update()
     {
-        // Billboard: pin selalu menghadap kamera
-        var cam = map != null ? map.mapCamera : Camera.main;
-        if (cam == null) return;
-        var camRot = cam.transform.rotation;
-        foreach (var m in markers)
+        // Billboard: pin selalu menghadap kamera — hanya saat kamera bergerak.
+        if (cachedCam == null)
+            cachedCam = map != null ? map.mapCamera : Camera.main;
+        var cam = cachedCam;
+        if (cam != null && markers.Count > 0)
         {
-            if (m.pin != null) m.pin.transform.rotation = camRot;
-            if (m.label != null) m.label.transform.rotation = camRot;
+            bool camMoved = !camPoseInit ||
+                cam.transform.position != lastCamPos ||
+                cam.transform.rotation != lastCamRot;
+            if (camMoved)
+            {
+                camPoseInit = true;
+                lastCamPos = cam.transform.position;
+                lastCamRot = cam.transform.rotation;
+                foreach (var m in markers)
+                {
+                    if (m.pin != null) m.pin.transform.rotation = lastCamRot;
+                    if (m.label != null) m.label.transform.rotation = lastCamRot;
+                }
+            }
         }
 
         // Tap detection TANPA modul Physics: screen-space picking.
         // Tiap pin diproyeksikan ke layar; marker terdekat dalam radius
         // sentuh yang dipilih. Radius diskalakan dari ukuran pin dunia.
-        if (Input.GetMouseButtonDown(0) && cam != null)
+        // Drag-vs-tap: hanya anggap tap jika gerakan < 10px (pan yang
+        // berakhir di pin tidak boleh memilih halte).
+        if (Input.GetMouseButtonDown(0))
         {
-            Vector2 tap = Input.mousePosition;
-            Marker best = null;
-            float bestDist = float.MaxValue;
-            foreach (var m in markers)
+            downPos = Input.mousePosition;
+            downTracked = true;
+        }
+        else if (Input.GetMouseButtonUp(0) && downTracked)
+        {
+            downTracked = false;
+            Vector2 upPos = Input.mousePosition;
+            if (cam != null && Vector2.Distance(downPos, upPos) <= TapMaxMovePx)
+                HandleTap(upPos, cam);
+        }
+    }
+
+    private void HandleTap(Vector2 tap, Camera cam)
+    {
+        Marker best = null;
+        float bestDist = float.MaxValue;
+        foreach (var m in markers)
+        {
+            if (m.pin == null || m.id.StartsWith("cluster:")) continue;
+            // Titik tengah pin (sedikit di atas posisi dasar halte)
+            Vector3 screen = cam.WorldToScreenPoint(
+                m.worldPos + new Vector3(0, pinSize * 0.3f, 0));
+            if (screen.z <= 0f) continue; // di belakang kamera
+            float dist = Vector2.Distance(tap, new Vector2(screen.x, screen.y));
+            float hitRadius = Mathf.Clamp(pinSize * 1200f / screen.z, 24f, 120f);
+            if (dist < hitRadius && dist < bestDist)
             {
-                if (m.pin == null || m.id.StartsWith("cluster:")) continue;
-                // Titik tengah pin (sedikit di atas posisi dasar halte)
-                Vector3 screen = cam.WorldToScreenPoint(
-                    m.worldPos + new Vector3(0, pinSize * 0.3f, 0));
-                if (screen.z <= 0f) continue; // di belakang kamera
-                float dist = Vector2.Distance(tap, new Vector2(screen.x, screen.y));
-                float hitRadius = Mathf.Clamp(pinSize * 1200f / screen.z, 24f, 120f);
-                if (dist < hitRadius && dist < bestDist)
-                {
-                    bestDist = dist;
-                    best = m;
-                }
+                bestDist = dist;
+                best = m;
             }
-            if (best != null)
-            {
-                SelectStop(best.id);
-                FindObjectOfType<SelaBridge>()?.NotifyStopSelected(best.id);
-            }
+        }
+        if (best != null)
+        {
+            SelectStop(best.id);
+            FindObjectOfType<SelaBridge>()?.NotifyStopSelected(best.id);
         }
     }
 
@@ -220,12 +263,7 @@ public class StopMarkerManager : MonoBehaviour
         // NB: GetComponent(string) agar kompilasi tidak butuh modul Physics.
         Destroy(pin.GetComponent("Collider"));
         var pinRend = pin.GetComponent<Renderer>();
-        var pinMat = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
-        pinMat.color = pinColor;
-        // Depth test off agar pin selalu terlihat di atas gedung (§8: readability)
-        pinMat.SetInt("_ZTest", (int)UnityEngine.Rendering.CompareFunction.Always);
-        pinMat.renderQueue = 3000;
-        pinRend.material = pinMat;
+        pinRend.sharedMaterial = PinMaterial(selected: false);
         pinRend.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
 
         // Label: TextMesh di atas pin
@@ -240,11 +278,7 @@ public class StopMarkerManager : MonoBehaviour
         textMesh.alignment = TextAlignment.Center;
         textMesh.color = Color.white;
         var labelRend = labelObj.GetComponent<Renderer>();
-        var labelMat = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
-        labelMat.color = new Color(0.05f, 0.05f, 0.08f, 0.75f); // background gelap
-        labelMat.SetInt("_ZTest", (int)UnityEngine.Rendering.CompareFunction.Always);
-        labelMat.renderQueue = 3001;
-        labelRend.material = labelMat;
+        labelRend.sharedMaterial = LabelMaterial();
 
         var marker = new Marker
         {
@@ -261,13 +295,52 @@ public class StopMarkerManager : MonoBehaviour
         ApplyVisual(marker);
     }
 
+    private Material PinMaterial(bool selected)
+    {
+        // NB: material shared dibuat malas (lazy) karena pinColor adalah
+        // instance field yang baru valid setelah Awake/deserialisasi.
+        if (selected)
+        {
+            if (sharedPinSelectedMat == null)
+                sharedPinSelectedMat = MakePinMaterial(pinSelectedColor);
+            return sharedPinSelectedMat;
+        }
+        if (sharedPinMat == null)
+            sharedPinMat = MakePinMaterial(pinColor);
+        return sharedPinMat;
+    }
+
+    private static Material MakePinMaterial(Color color)
+    {
+        var mat = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
+        mat.color = color;
+        // Depth test off agar pin selalu terlihat di atas gedung (§8: readability)
+        mat.SetInt("_ZTest", (int)UnityEngine.Rendering.CompareFunction.Always);
+        mat.renderQueue = 3000;
+        return mat;
+    }
+
+    private static Material LabelMaterial()
+    {
+        if (sharedLabelMat == null)
+        {
+            sharedLabelMat = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
+            sharedLabelMat.color = new Color(0.05f, 0.05f, 0.08f, 0.75f); // background gelap
+            sharedLabelMat.SetInt("_ZTest", (int)UnityEngine.Rendering.CompareFunction.Always);
+            sharedLabelMat.renderQueue = 3001;
+        }
+        return sharedLabelMat;
+    }
+
     private void ApplyVisual(Marker m)
     {
         if (m.pin == null) return;
         float size = m.selected ? pinSelectedSize : pinSize;
         m.pin.transform.localScale = new Vector3(size, size * 0.6f, size);
         var rend = m.pin.GetComponent<Renderer>();
-        if (rend != null) rend.material.color = m.selected ? pinSelectedColor : pinColor;
+        // Tukar material shared (bukan ubah warna material) agar tidak
+        // memengaruhi pin lain.
+        if (rend != null) rend.sharedMaterial = PinMaterial(m.selected);
     }
 
     public void Clear()

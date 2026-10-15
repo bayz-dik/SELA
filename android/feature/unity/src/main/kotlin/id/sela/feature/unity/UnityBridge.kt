@@ -28,7 +28,7 @@ class UnityBridge private constructor() {
     private var player: Any? = null
     private var playerView: FrameLayout? = null
     private var unityReady = false
-    private val pending = ConcurrentLinkedQueue<Triple<String, String, String>>()
+    private val pending = ConcurrentLinkedQueue<PendingMessage>()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val mainHandler = Handler(Looper.getMainLooper())
 
@@ -43,6 +43,11 @@ class UnityBridge private constructor() {
     companion object {
         private const val TAG = "UnityBridge"
         private const val BRIDGE_OBJECT = "SelaBridge"
+        /**
+         * A1: batas retry per pesan. deliver() yang selalu gagal sebelumnya
+         * me-requeue tanpa batas di Dispatchers.Main → UI freeze permanen.
+         */
+        private const val MAX_DELIVERY_ATTEMPTS = 3
 
         @Volatile
         private var instance: UnityBridge? = null
@@ -186,33 +191,58 @@ class UnityBridge private constructor() {
         }
     }
 
+    /**
+     * A1: pesan antrean membawa hitungan percobaan agar retry terbatas —
+     * setelah [MAX_DELIVERY_ATTEMPTS]x gagal, pesan di-drop dan dicatat ke
+     * [lastError], tidak pernah requeue tanpa batas.
+     */
+    private data class PendingMessage(
+        val gameObject: String,
+        val method: String,
+        val payload: String,
+        val attempts: Int = 0,
+    )
+
     /** Kirim pesan ke Unity. Diantrekan jika Unity belum ready. */
     fun send(gameObject: String = BRIDGE_OBJECT, method: String, payload: String = "") {
         if (!unityReady) {
-            pending.add(Triple(gameObject, method, payload))
+            pending.add(PendingMessage(gameObject, method, payload))
             return
         }
-        deliver(gameObject, method, payload)
+        if (!deliver(gameObject, method, payload)) {
+            // Gagal saat Unity diklaim ready — coba lagi terbatas via flush berikutnya.
+            pending.add(PendingMessage(gameObject, method, payload, attempts = 1))
+        }
     }
 
     private fun flushPending() {
         while (true) {
-            val (go, method, payload) = pending.poll() ?: break
-            deliver(go, method, payload)
+            val msg = pending.poll() ?: break
+            if (!deliver(msg.gameObject, msg.method, msg.payload)) {
+                if (msg.attempts + 1 < MAX_DELIVERY_ATTEMPTS) {
+                    pending.add(msg.copy(attempts = msg.attempts + 1))
+                } else {
+                    val dropped =
+                        "Pesan Unity dibuang setelah $MAX_DELIVERY_ATTEMPTS percobaan gagal: ${msg.method}"
+                    lastError = dropped
+                    Log.w(TAG, dropped)
+                }
+            }
         }
     }
 
-    private fun deliver(gameObject: String, method: String, payload: String) {
-        try {
+    /** @return true bila pesan terkirim; false bila gagal (tanpa requeue di sini). */
+    private fun deliver(gameObject: String, method: String, payload: String): Boolean {
+        return try {
             val playerClass = Class.forName("com.unity3d.player.UnityPlayer")
             playerClass.getMethod(
                 "UnitySendMessage",
                 String::class.java, String::class.java, String::class.java,
             ).invoke(null, gameObject, method, payload)
+            true
         } catch (e: Exception) {
             Log.w(TAG, "UnitySendMessage gagal: $method", e)
-            // Masukkan lagi ke antrean untuk retry berikutnya.
-            pending.add(Triple(gameObject, method, payload))
+            false
         }
     }
 

@@ -18,6 +18,10 @@ public class RoadMeshBuilder : MonoBehaviour
     public Material roadMaterial;
     public Material markingMaterial; // garis marka
 
+    // Root hasil build terakhir — dihapus (beserta mesh-nya) sebelum rebuild
+    // agar tidak dobel dan tidak bocor memori.
+    private GameObject roadRoot;
+
     void Awake()
     {
         Instance = this;
@@ -65,8 +69,11 @@ public class RoadMeshBuilder : MonoBehaviour
 
     private void BuildRoadsInternal(List<JakartaSceneBuilder.RoadSegment> segments)
     {
+        ClearRoads(); // hapus build lama: cegah geometri dobel + mesh leak
+
         var roadGo = new GameObject("Roads");
         roadGo.transform.SetParent(transform);
+        roadRoot = roadGo;
 
         var verts = new List<Vector3>();
         var tris = new List<int>();
@@ -107,6 +114,22 @@ public class RoadMeshBuilder : MonoBehaviour
         }
 
         Debug.Log($"[RoadMeshBuilder] {segments.Count} segmen jalan dibangun.");
+    }
+
+    /// <summary>
+    /// Hapus hasil build sebelumnya beserta mesh yang dibuat
+    /// (Mesh hasil `new Mesh()` tidak ikut hancur saat GameObject di-Destroy).
+    /// </summary>
+    public void ClearRoads()
+    {
+        if (roadRoot == null) return;
+        foreach (var mf in roadRoot.GetComponentsInChildren<MeshFilter>())
+        {
+            if (mf != null && mf.sharedMesh != null)
+                Destroy(mf.sharedMesh);
+        }
+        Destroy(roadRoot);
+        roadRoot = null;
     }
 
     private void AddRoadQuad(JakartaSceneBuilder.RoadSegment seg,

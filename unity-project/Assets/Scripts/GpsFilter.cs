@@ -41,6 +41,14 @@ public class GpsFilter : MonoBehaviour
     private double lastUpdateTime;
     private bool hasLast;
 
+    // Jendela sampel untuk estimasi kecepatan: (waktu, lat, lon) fix yang diterima.
+    // Menggantikan threshold kaku `dt > 0.5s` — update GPS > 2Hz sebelumnya
+    // selalu dianggap diam karena kecepatan tak pernah dihitung ulang.
+    private readonly System.Collections.Generic.List<(double t, double lat, double lon)> samples =
+        new System.Collections.Generic.List<(double t, double lat, double lon)>();
+    private const double SpeedWindowSec = 3.0;
+    private const double MinWindowSpanSec = 0.05;
+
     /// <summary>
     /// Proses satu fix GPS mentah. Kembalikan hasil filter.
     /// Dipanggil dari MapController.UpdateGps.
@@ -75,13 +83,45 @@ public class GpsFilter : MonoBehaviour
             }
         }
 
-        // 3. Estimasi kecepatan dari perpindahan (jika tidak disediakan)
+        // 3. Estimasi kecepatan dari jendela waktu (rata-rata beberapa sampel
+        // terakhir), bukan threshold kaku. Update cepat (>2Hz) tetap terhitung.
+        // Konvensi: speed <= 0 berarti "tidak disediakan" (MapController
+        // mengirim 0) — maka estimasi dari perpindahan.
         float estSpeed = speed;
-        if (hasLast && now > lastUpdateTime)
+        if (speed <= 0f)
         {
-            double dist = HaversineMeters(last.lat, last.lon, lat, lon);
-            double dt = now - lastUpdateTime;
-            if (dt > 0.5) estSpeed = (float)(dist / dt);
+            // Tambahkan sampel saat ini lalu pangkas di luar jendela
+            samples.Add((now, lat, lon));
+            while (samples.Count > 0 && now - samples[0].t > SpeedWindowSec)
+                samples.RemoveAt(0);
+
+            if (samples.Count >= 2)
+            {
+                var first = samples[0];
+                var lastS = samples[samples.Count - 1];
+                double span = lastS.t - first.t;
+                if (span >= MinWindowSpanSec)
+                {
+                    double dist = HaversineMeters(first.lat, first.lon, lastS.lat, lastS.lon);
+                    estSpeed = (float)(dist / span);
+                }
+                else if (hasLast)
+                {
+                    estSpeed = last.speed; // jendela terlalu pendek — tahan estimasi lama
+                }
+                else
+                {
+                    estSpeed = 0f;
+                }
+            }
+            else if (hasLast)
+            {
+                estSpeed = last.speed;
+            }
+            else
+            {
+                estSpeed = 0f;
+            }
         }
 
         // 4. Pilih bearing: course-over-ground saat bergerak, tahan saat diam

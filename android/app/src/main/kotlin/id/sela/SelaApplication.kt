@@ -18,6 +18,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @EntryPoint
 @InstallIn(SingletonComponent::class)
@@ -67,7 +68,11 @@ class SelaApplication : Application() {
         CoroutineScope(SupervisorJob() + Dispatchers.Main).launch {
             runCatching {
                 if (!entry.prefs().calendarReminders.first()) return@launch
-                val events = CalendarReminder.upcomingEvents(this@SelaApplication)
+                // B32-minor: contentResolver.query() adalah blocking I/O —
+                // jangan di Main thread (risiko ANR).
+                val events = withContext(Dispatchers.IO) {
+                    CalendarReminder.upcomingEvents(this@SelaApplication)
+                }
                 val first = events.firstOrNull() ?: return@launch
                 SelaNotifications.postBusAlert(
                     context = this@SelaApplication,

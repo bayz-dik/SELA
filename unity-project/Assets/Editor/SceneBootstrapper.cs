@@ -140,9 +140,8 @@ public static class SceneBootstrapper
         }
         // Buat URP asset default via ScriptableObject
         var pipeline = ScriptableObject.CreateInstance<UniversalRenderPipelineAsset>();
-        AssetDatabase.CreateAsset(pipeline, "Assets/Settings/URP-Balanced.asset");
         System.IO.Directory.CreateDirectory("Assets/Settings");
-        // NOTE: CreateAsset butuh directory exist dulu — urutan dibalik di bawah
+        AssetDatabase.CreateAsset(pipeline, "Assets/Settings/URP-Balanced.asset");
         Debug.Log("[SELA] URP asset default dibuat.");
     }
 
@@ -167,6 +166,7 @@ public static class SceneBootstrapper
         vignette.intensity.value = 0.25f;
 
         vol.profile = profile;
+        System.IO.Directory.CreateDirectory("Assets/Settings");
         AssetDatabase.CreateAsset(profile, "Assets/Settings/GlobalVolumeProfile.asset");
         Debug.Log("[SELA] Post-processing volume dibuat.");
     }

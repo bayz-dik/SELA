@@ -76,6 +76,7 @@ dependencies {
     implementation("androidx.camera:camera-camera2:1.3.4")
     implementation("androidx.camera:camera-lifecycle:1.3.4")
     implementation("androidx.camera:camera-view:1.3.4")
+    implementation("com.google.guava:guava:33.3.1-android")
     implementation("com.google.android.gms:play-services-nearby:19.3.0")
     // Tanya Sela: ChatGPT OAuth (Custom Tabs) + penyimpanan token terenkripsi
     implementation("androidx.browser:browser:1.8.0")

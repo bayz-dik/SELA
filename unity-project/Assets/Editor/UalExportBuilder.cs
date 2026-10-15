@@ -102,7 +102,8 @@ public static class UalExportBuilder
         {
             Debug.Log($"[UalExport] SUKSES. unityLibrary ada di: {exportPath}/unityLibrary");
             Debug.Log($"[UalExport] Ukuran: {summary.totalSize / 1024 / 1024} MB");
-            EditorApplication.Exit(0);
+            // Jangan panggil EditorApplication.Exit(0) di sini — biarkan Unity exit
+            // natural via flag -quit agar file ter-flush sempurna ke disk.
         }
         else
         {

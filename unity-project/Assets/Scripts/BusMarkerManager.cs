@@ -94,7 +94,8 @@ public class BusMarker : MonoBehaviour
         body.transform.SetParent(transform);
         body.transform.localPosition = new Vector3(0, height / 2 + 0.5f, 0);
         body.transform.localScale = new Vector3(width, height, length);
-        Destroy(body.GetComponent<Collider>());
+        // NB: GetComponent(string) agar kompilasi tidak butuh modul Physics.
+        Destroy(body.GetComponent("Collider"));
 
         mat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
         mat.color = color;
@@ -110,7 +111,7 @@ public class BusMarker : MonoBehaviour
         windshield.transform.SetParent(transform);
         windshield.transform.localPosition = new Vector3(0, height / 2 + 1.2f, length / 2 - 0.1f);
         windshield.transform.localScale = new Vector3(width * 0.9f, 1f, 0.2f);
-        Destroy(windshield.GetComponent<Collider>());
+        Destroy(windshield.GetComponent("Collider"));
         var glassMat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
         glassMat.color = new Color(0.05f, 0.07f, 0.10f);
         glassMat.SetFloat("_Smoothness", 0.9f);

@@ -112,8 +112,9 @@ public class StreetlightPlacer : MonoBehaviour
         glow.transform.localScale = new Vector3(4f, 4f, 1f);
         var gr = glow.GetComponent<Renderer>();
         gr.material = glowMaterial;
-        // Hapus collider yang tidak perlu
-        Destroy(glow.GetComponent<Collider>());
+        // Hapus collider yang tidak perlu.
+        // NB: pakai GetComponent(string) agar kompilasi tidak butuh modul Physics.
+        Destroy(glow.GetComponent("Collider"));
 
         // Billboard behavior via script ringan
         var bb = glow.AddComponent<BillboardGlow>();

@@ -109,18 +109,33 @@ public class StopMarkerManager : MonoBehaviour
             if (m.label != null) m.label.transform.rotation = camRot;
         }
 
-        // Tap detection (touch + mouse untuk editor)
+        // Tap detection TANPA modul Physics: screen-space picking.
+        // Tiap pin diproyeksikan ke layar; marker terdekat dalam radius
+        // sentuh yang dipilih. Radius diskalakan dari ukuran pin dunia.
         if (Input.GetMouseButtonDown(0) && cam != null)
         {
-            var ray = cam.ScreenPointToRay(Input.mousePosition);
-            if (Physics.Raycast(ray, out var hit, 5000f))
+            Vector2 tap = Input.mousePosition;
+            Marker best = null;
+            float bestDist = float.MaxValue;
+            foreach (var m in markers)
             {
-                var marker = hit.collider.GetComponentInParent<MarkerRef>();
-                if (marker != null && !string.IsNullOrEmpty(marker.stopId))
+                if (m.pin == null || m.id.StartsWith("cluster:")) continue;
+                // Titik tengah pin (sedikit di atas posisi dasar halte)
+                Vector3 screen = cam.WorldToScreenPoint(
+                    m.worldPos + new Vector3(0, pinSize * 0.3f, 0));
+                if (screen.z <= 0f) continue; // di belakang kamera
+                float dist = Vector2.Distance(tap, new Vector2(screen.x, screen.y));
+                float hitRadius = Mathf.Clamp(pinSize * 1200f / screen.z, 24f, 120f);
+                if (dist < hitRadius && dist < bestDist)
                 {
-                    SelectStop(marker.stopId);
-                    FindObjectOfType<SelaBridge>()?.NotifyStopSelected(marker.stopId);
+                    bestDist = dist;
+                    best = m;
                 }
+            }
+            if (best != null)
+            {
+                SelectStop(best.id);
+                FindObjectOfType<SelaBridge>()?.NotifyStopSelected(best.id);
             }
         }
     }
@@ -196,12 +211,14 @@ public class StopMarkerManager : MonoBehaviour
         root.transform.position = worldPos;
         root.transform.SetParent(transform, false);
 
-        // Pin: sphere pipih + collider untuk tap
+        // Pin: sphere pipih (tanpa collider — tap pakai screen-space picking)
         var pin = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         pin.name = "Pin";
         pin.transform.SetParent(root.transform, false);
         pin.transform.localScale = new Vector3(pinSize, pinSize * 0.6f, pinSize);
         pin.transform.localPosition = new Vector3(0, pinSize * 0.3f, 0);
+        // NB: GetComponent(string) agar kompilasi tidak butuh modul Physics.
+        Destroy(pin.GetComponent("Collider"));
         var pinRend = pin.GetComponent<Renderer>();
         var pinMat = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
         pinMat.color = pinColor;
@@ -210,9 +227,6 @@ public class StopMarkerManager : MonoBehaviour
         pinMat.renderQueue = 3000;
         pinRend.material = pinMat;
         pinRend.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-
-        var markerRef = pin.AddComponent<MarkerRef>();
-        markerRef.stopId = id.StartsWith("cluster:") ? null : id;
 
         // Label: TextMesh di atas pin
         var labelObj = new GameObject("Label");
@@ -262,11 +276,5 @@ public class StopMarkerManager : MonoBehaviour
             if (m.root != null) Destroy(m.root);
         markers.Clear();
         byId.Clear();
-    }
-
-    // Komponen penanda untuk raycast -> stopId
-    private class MarkerRef : MonoBehaviour
-    {
-        public string stopId;
     }
 }

@@ -2,6 +2,7 @@ package id.sela.designsystem
 
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
+import id.sela.model.ServiceType
 
 /**
  * Palet pastel SELA — "Pagi Cerah".
@@ -115,3 +116,17 @@ val SelaPastelScheme = lightColorScheme(
     inversePrimary = SelaPastel.blue,
     scrim = SelaPastel.ink,
 )
+
+/** Warna pastel tiap layanan — untuk titik, lencana, dan chip filter. */
+fun ServiceType.pastelColor(): Color = when (this) {
+    ServiceType.BRT -> SelaPastel.brt
+    ServiceType.JAKLINGKO -> SelaPastel.jakLingko
+    ServiceType.BUS -> SelaPastel.bus
+}
+
+/** Varian deep (lolos kontras) tiap layanan — untuk teks di atas pastel. */
+fun ServiceType.pastelDeepColor(): Color = when (this) {
+    ServiceType.BRT -> SelaPastel.brtDeep
+    ServiceType.JAKLINGKO -> SelaPastel.jakLingkoDeep
+    ServiceType.BUS -> SelaPastel.busDeep
+}

@@ -14,11 +14,4 @@ dependencyResolutionManagement {
     }
 }
 rootProject.name = "Sela"
-include(":app", ":core:model", ":core:database", ":core:network", ":core:location", ":core:designsystem", ":feature:map", ":feature:search", ":feature:settings", ":feature:unity")
-// Unity as a Library: sertakan hasil export Unity hanya jika direktori export ada.
-// Lihat unity/EXPORT_GUIDE.md untuk cara menghasilkan unity-export/unityLibrary.
-val unityLibDir = file("unity-export/unityLibrary")
-if (unityLibDir.exists()) {
-    include(":unityLibrary")
-    project(":unityLibrary").projectDir = unityLibDir
-}
+include(":app", ":core:model", ":core:database", ":core:network", ":core:location", ":core:designsystem", ":feature:map", ":feature:search", ":feature:settings")

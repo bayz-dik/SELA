@@ -33,7 +33,6 @@ dependencies {
     implementation(project(":core:designsystem"))
     implementation(project(":feature:map"))
     implementation(project(":feature:settings"))
-    implementation(project(":feature:unity"))
     implementation("androidx.room:room-runtime:2.6.1")
     implementation(platform("androidx.compose:compose-bom:2024.12.01"))
     ksp("com.google.dagger:hilt-compiler:2.52")

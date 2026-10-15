@@ -12,7 +12,6 @@ dependencies {
     implementation(project(":core:designsystem"))
     implementation(project(":core:location"))
     implementation(project(":feature:search"))
-    implementation(project(":feature:unity"))
     implementation(platform("androidx.compose:compose-bom:2024.12.01"))
     ksp("com.google.dagger:hilt-compiler:2.52")
     implementation("androidx.core:core-ktx:1.15.0")

@@ -340,27 +340,11 @@ fun MapScreen(
     val is3d = mapMode.is3d
     // Gedung 3D: paksa tampil saat mode 3D (ekstrusi adalah inti efek 3D).
     val effective3dBuildings = show3dBuildings || is3d
-    // 3D Ultra V4.0: Unity sebagai renderer 3D (MapLibre tetap untuk 2D).
-    // enter3D meluncurkan UnityMapActivity full-screen; 2D tidak berubah.
+    // 3D: MapLibre 3D (gedung ekstrusi + kamera tilt). Unity dihapus total.
     fun enter3D() {
         val cur = viewModel.uiState.value.camera
-        val cameraJson =
-            """{"lat":${cur.lat},"lon":${cur.lon},"zoom":${cur.zoom},"bearing":${cur.bearing},"pitch":60.0,"mode":"free"}"""
-        if (id.sela.feature.unity.UnityAvailability.is3dSupported(context)) {
-            val intent = android.content.Intent(
-                context,
-                id.sela.feature.unity.UnityMapActivity::class.java,
-            ).putExtra(
-                id.sela.feature.unity.UnityMapActivity.EXTRA_CAMERA_JSON,
-                cameraJson,
-            )
-            context.startActivity(intent)
-        } else {
-            viewModel.message(
-                "Mode 3D tidak tersedia: " +
-                    id.sela.feature.unity.UnityAvailability.unsupportedReason(context),
-            )
-        }
+        viewModel.flyTo(cur.copy(tilt = MAP_3D_DEFAULT_TILT))
+        mapMode = MapMode.MAP_3D_FREE
     }
     fun exit3D() {
         val cur = viewModel.uiState.value.camera

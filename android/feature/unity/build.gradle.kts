@@ -16,6 +16,10 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
-    // unity-classes.jar disediakan saat unityLibrary di-drop-in (compileOnly agar
-    // build tetap sukses tanpa Unity). Lihat unity/EXPORT_GUIDE.md.
+    // Unity as a Library: hanya jika modul :unityLibrary ada (di-include oleh
+    // settings.gradle.kts saat unity-export/unityLibrary tersedia).
+    // Lihat unity/EXPORT_GUIDE.md.
+    if (findProject(":unityLibrary") != null) {
+        implementation(project(":unityLibrary"))
+    }
 }

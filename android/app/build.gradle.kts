@@ -1,6 +1,15 @@
-plugins { alias(libs.plugins.android.application); alias(libs.plugins.kotlin.android); alias(libs.plugins.kotlin.compose); alias(libs.plugins.ksp); alias(libs.plugins.hilt); alias(libs.plugins.google.services) }
+plugins { alias(libs.plugins.android.application); alias(libs.plugins.kotlin.android); alias(libs.plugins.kotlin.compose); alias(libs.plugins.ksp); alias(libs.plugins.hilt) }
 
 import java.util.Properties
+
+// Google Services plugin hanya di-apply jika google-services.json ada.
+// Tanpa file ini, Firebase Auth tidak aktif dan login menampilkan pesan
+// "belum dikonfigurasi" (jujur, bukan login palsu).
+if (file("google-services.json").exists() ||
+    file("src/release/google-services.json").exists() ||
+    file("src/debug/google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+}
 
 android {
     namespace = "id.sela"

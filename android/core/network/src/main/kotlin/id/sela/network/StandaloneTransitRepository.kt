@@ -190,7 +190,7 @@ class StandaloneTransitRepository @Inject constructor(
         var t: Throwable? = e
         while (t != null) {
             if (t is MqttException &&
-                (t.reasonCode == MqttException.REASON_CODE_NOT_AUTHORIZED || t.reasonCode == 5)
+                (t.reasonCode == MqttException.REASON_CODE_NOT_AUTHORIZED || t.reasonCode.toInt() == 5)
             ) return true
             val msg = t.message?.lowercase()
             if (msg != null && ("not authorized" in msg || "rc=5" in msg)) return true

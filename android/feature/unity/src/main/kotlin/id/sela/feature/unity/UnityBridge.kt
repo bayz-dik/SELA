@@ -87,7 +87,7 @@ class UnityBridge private constructor() {
      *   constructor publik `(Context)`.
      * - View didapat via `getView()` (bukan cast player ke FrameLayout).
      */
-    private const val UNITY_PLAYER_CLASS = "com.unity3d.player.UnityPlayerForActivityOrService"
+    private val UNITY_PLAYER_CLASS = "com.unity3d.player.UnityPlayerForActivityOrService"
 
     /** Buat player dan tempelkan view-nya ke [container]. Idempotent. */
     fun attach(activity: Activity, container: FrameLayout) {

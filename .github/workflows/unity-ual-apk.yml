@@ -19,7 +19,6 @@ jobs:
         with:
           targetPlatform: Android
           projectPath: unity-project
-          androidExportType: androidStudioProject
           buildMethod: SelaCiBuild.BuildAndroidLibrary
           buildsPath: unity-export-out
           androidTargetSdkVersion: '35'

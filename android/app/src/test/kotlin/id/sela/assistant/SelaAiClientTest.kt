@@ -82,4 +82,19 @@ class SelaAiClientTest {
     @Test fun parseAnswer_jsonRusak() {
         assertNull(SelaAiLogic.parseAnswer("bukan json"))
     }
+
+    @Test fun parseAnswer_chatCompletions() {
+        val json = """
+        {"id":"chatcmpl-1","object":"chat.completion",
+         "choices":[{"index":0,"message":
+           {"role":"assistant","content":"Jakarta."},
+           "finish_reason":"stop"}]}
+        """.trimIndent()
+        assertEquals("Jakarta.", SelaAiLogic.parseAnswer(json))
+    }
+
+    @Test fun parseAnswer_chatCompletions_kosong() {
+        val json = """{"choices":[{"message":{"content":""}}]}"""
+        assertNull(SelaAiLogic.parseAnswer(json))
+    }
 }

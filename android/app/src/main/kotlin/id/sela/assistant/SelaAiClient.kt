@@ -8,32 +8,31 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 /**
- * Klien AI "Tanya Sela" — memanggil Codex Responses API milik akun ChatGPT
- * pengguna langsung dari HP (tanpa relay, tanpa Telegram).
+ * Klien AI "Tanya Sela" — memanggil OpenAI API standar
+ * (`https://api.openai.com/v1/chat/completions`) memakai token hasil
+ * "Sign in with ChatGPT" (dynamic client registration).
  *
- * Endpoint & header mengikuti https://github.com/EvanZhouDev/openai-oauth
- * (tidak resmi / komunitas).
+ * Token berasal dari akun ChatGPT pengguna sendiri (gratis/Plus/Pro),
+ * jadi tidak perlu API key berbayar.
  */
 object SelaAiClient {
-    private const val RESPONSES_URL = "https://chatgpt.com/backend-api/codex/responses"
+    private const val CHAT_URL = "https://api.openai.com/v1/chat/completions"
 
     /**
-     * Daftar model Codex yang didukung (sesuai katalog akun ChatGPT Plus).
-     * Urutan mengikuti preferensi Bayu.
+     * Daftar model yang bisa dipilih di dalam chat.
+     * Token plan ChatGPT bisa mengakses model-model standar OpenAI;
+     * bila satu model tidak tersedia untuk akun, API mengembalikan error
+     * yang jelas dan pengguna bisa pilih model lain.
      */
     val MODELS = listOf(
-        "gpt-6-astra",
-        "gpt-6.1-sol",
-        "gpt-6-sol",
-        "gpt-6-luna",
-        "gpt-5.6-sol",
-        "gpt-5.6-terra",
-        "gpt-5.6-luna",
-        "gpt-5.5",
+        "gpt-4o-mini",
+        "gpt-4o",
+        "gpt-4.1-mini",
+        "gpt-4.1",
     )
 
-    /** Model default; ganti bila model tidak tersedia untuk akun. */
-    const val DEFAULT_MODEL = "gpt-6-astra"
+    /** Model default: murah, cepat, tersedia luas. */
+    const val DEFAULT_MODEL = "gpt-4o-mini"
 
     /** Hasil pemanggilan AI. */
     sealed interface AiResult {
@@ -50,29 +49,33 @@ object SelaAiClient {
         withContext(Dispatchers.IO) {
             val token = ChatGptAuth.getAccessToken()
                 ?: return@withContext AiResult.NeedLogin
-            val accountId = ChatGptAuth.getAccountId().orEmpty()
 
             val body = JSONObject()
                 .put("model", model)
-                .put("stream", false)
                 .put(
-                    "input",
-                    JSONArray().put(
-                        JSONObject()
-                            .put("role", "user")
-                            .put(
-                                "content",
-                                "Kamu asisten app SELA (info bus TransJakarta Jakarta). " +
-                                    "Jawab singkat, jelas, Bahasa Indonesia santai. " +
-                                    "Pertanyaan: $question",
-                            ),
-                    ),
+                    "messages",
+                    JSONArray()
+                        .put(
+                            JSONObject()
+                                .put("role", "system")
+                                .put(
+                                    "content",
+                                    "Kamu asisten app SELA (info bus TransJakarta Jakarta). " +
+                                        "Jawab singkat, jelas, Bahasa Indonesia santai.",
+                                ),
+                        )
+                        .put(
+                            JSONObject()
+                                .put("role", "user")
+                                .put("content", question),
+                        ),
                 )
+                .put("max_tokens", 800)
                 .toString()
 
             var conn: HttpURLConnection? = null
             try {
-                conn = (URL(RESPONSES_URL).openConnection() as HttpURLConnection).apply {
+                conn = (URL(CHAT_URL).openConnection() as HttpURLConnection).apply {
                     requestMethod = "POST"
                     doOutput = true
                     connectTimeout = 20000
@@ -80,15 +83,17 @@ object SelaAiClient {
                     setRequestProperty("Content-Type", "application/json")
                     // Jangan pernah log nilai header ini
                     setRequestProperty("Authorization", "Bearer $token")
-                    if (accountId.isNotBlank()) {
-                        setRequestProperty("chatgpt-account-id", accountId)
-                    }
                 }
                 conn.outputStream.use { it.write(body.toByteArray(Charsets.UTF_8)) }
 
                 val code = conn.responseCode
                 if (code == 401 || code == 403) {
                     return@withContext AiResult.NeedLogin
+                }
+                if (code == 404) {
+                    return@withContext AiResult.Error(
+                        "Model $model tidak tersedia untuk akunmu. Pilih model lain ya.",
+                    )
                 }
                 if (code !in 200..299) {
                     return@withContext AiResult.Error(
@@ -114,7 +119,9 @@ object SelaAiClient {
         }
 
     /**
-     * Ambil teks jawaban dari format OpenAI Responses API.
+     * Ambil teks jawaban dari format OpenAI Chat Completions API
+     * (`choices[0].message.content`). Format Responses API lama tetap
+     * didukung sebagai fallback.
      * Delegasi ke [SelaAiLogic] agar bisa di-unit-test.
      */
     fun parseAnswer(jsonText: String): String? = SelaAiLogic.parseAnswer(jsonText)

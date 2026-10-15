@@ -36,8 +36,9 @@ object SelaAiLogic {
     }
 
     /**
-     * Ambil teks jawaban dari format OpenAI Responses API:
-     * output[] -> type=message -> content[] -> type=output_text -> text
+     * Ambil teks jawaban. Format utama: OpenAI Chat Completions API
+     * (choices[0].message.content). Format Responses API lama
+     * (output[] -> content[] -> output_text) tetap didukung sebagai fallback.
      */
     fun parseAnswer(jsonText: String): String? {
         return runCatching {
@@ -47,6 +48,16 @@ object SelaAiLogic {
                 val msg = err?.optString("message").orEmpty()
                 return if (msg.isNotBlank()) "AI error: $msg" else null
             }
+            // Format Chat Completions: choices[0].message.content
+            val choices = root.optJSONArray("choices")
+            if (choices != null && choices.length() > 0) {
+                val content = choices.optJSONObject(0)
+                    ?.optJSONObject("message")
+                    ?.optString("content")
+                    .orEmpty()
+                if (content.isNotBlank()) return content.trim()
+            }
+            // Fallback: format Responses API lama
             val output = root.optJSONArray("output") ?: return null
             val sb = StringBuilder()
             for (i in 0 until output.length()) {

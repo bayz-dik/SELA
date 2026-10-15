@@ -19,6 +19,10 @@ import androidx.compose.ui.unit.dp
  * Permukaan memakai garis rambut (hairline), bukan bayangan berat.
  * Mengikuti tema sistem: gelap = Malam Kota, terang = Siang.
  */
+@Deprecated(
+    "Redesign pastel 2026-10: gunakan SelaPastelTheme. " +
+        "Tema Malam Kota dipertahankan sementara untuk layar lama.",
+)
 object SelaTokens {
     // Bentuk
     val pill = RoundedCornerShape(percent = 50)
@@ -43,6 +47,10 @@ object SelaTokens {
     val sheetPeek: Dp = 0.dp
 }
 
+@Deprecated(
+    "Redesign pastel 2026-10: gunakan SelaPastelTheme. " +
+        "Tema Malam Kota dipertahankan sementara untuk layar lama.",
+)
 @Composable
 fun SelaTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),

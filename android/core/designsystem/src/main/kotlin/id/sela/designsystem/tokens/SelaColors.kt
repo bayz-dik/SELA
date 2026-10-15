@@ -12,6 +12,10 @@ import id.sela.model.ServiceType
  * (chartreuse elektrik) dipakai untuk elemen live, aksi primer, dan logo.
  * Warna layanan tetap mudah dibedakan satu sama lain maupun dari volt.
  */
+@Deprecated(
+    "Redesign pastel 2026-10: gunakan SelaPastel + SelaPastelScheme. " +
+        "Palet volt/malam dipertahankan sementara untuk layar lama.",
+)
 object SelaPalette {
     // Merek
     val volt = Color(0xFFCDF138)

@@ -18,6 +18,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import org.json.JSONArray
 import org.json.JSONObject
 import java.io.BufferedReader
 import java.io.InputStreamReader
@@ -70,6 +71,8 @@ object ChatGptAuth {
     // Batas tunggu user menyelesaikan login di browser: 5 menit.
     private const val LOGIN_TIMEOUT_MS = 5 * 60 * 1000L
 
+    private const val TAG = "ChatGptAuth"
+
     private const val PREFS_NAME = "sela_chatgpt_auth"
     private const val KEY_ACCESS = "access_token"
     private const val KEY_REFRESH = "refresh_token"
@@ -105,6 +108,16 @@ object ChatGptAuth {
         data object Transient : RefreshResult
         /** Refresh token ditolak server (HTTP 400/401, mis. invalid_grant): sesi mati. */
         data object Permanent : RefreshResult
+    }
+
+    /**
+     * B28 — hasil pertukaran authorization code. Error membawa pesan spesifik
+     * untuk UI (bukan "Gagal menukar kode login" generik), TANPA bocoran
+     * token/code/verifier.
+     */
+    private sealed interface ExchangeResult {
+        data class Ok(val tokens: Tokens) : ExchangeResult
+        data class Error(val message: String) : ExchangeResult
     }
 
     @Volatile
@@ -240,15 +253,19 @@ object ChatGptAuth {
                     _authState.value = AuthState.Failed("Callback login tidak valid. Coba lagi.")
                     return@launch
                 }
-                val tokens = withContext(Dispatchers.IO) {
+                val exchange = withContext(Dispatchers.IO) {
                     exchangeCode(code, verifier, redirectUri, issuedClientId, nonce)
                 }
-                if (tokens == null) {
-                    _authState.value = AuthState.Failed("Gagal menukar kode login. Coba lagi.")
-                    return@launch
+                when (exchange) {
+                    is ExchangeResult.Ok -> {
+                        withContext(Dispatchers.IO) { saveTokens(exchange.tokens, issuedClientId) }
+                        _authState.value = AuthState.LoggedIn
+                    }
+                    is ExchangeResult.Error -> {
+                        _authState.value = AuthState.Failed(exchange.message)
+                        return@launch
+                    }
                 }
-                withContext(Dispatchers.IO) { saveTokens(tokens, issuedClientId) }
-                _authState.value = AuthState.LoggedIn
             } catch (e: java.net.BindException) {
                 android.util.Log.e("ChatGptAuth", "ServerSocket bind gagal", e)
                 runCatching { server?.close() }
@@ -344,14 +361,19 @@ object ChatGptAuth {
         val expiresAtMs: Long,
     )
 
-    /** Tukar authorization code jadi token (form-encoded, tanpa secret). */
+    /**
+     * Tukar authorization code jadi token (form-encoded, tanpa secret).
+     * B28 — mengembalikan [ExchangeResult] dengan pesan error spesifik per
+     * tahap (bukan null generik). Logging hanya mencatat HTTP status, ada/
+     * tidaknya field, dan alasan validasi — TIDAK PERNAH token/code/verifier.
+     */
     private fun exchangeCode(
         code: String,
         verifier: String,
         redirectUri: String,
         issuedClientId: String,
         nonce: String,
-    ): Tokens? {
+    ): ExchangeResult {
         return try {
             val body = listOf(
                 "grant_type" to "authorization_code",
@@ -361,14 +383,73 @@ object ChatGptAuth {
                 "redirect_uri" to redirectUri,
                 "resource" to RESOURCE,
             ).joinToString("&") { (k, v) -> "$k=${URLEncoder.encode(v, "UTF-8")}" }
-            val json = postForm(TOKEN_URL, body) ?: return null
-            val tokens = tokensFromJson(json) ?: return null
-            // Validasi ringan ID token: aud harus = issued client_id, belum expired,
-            // nonce cocok. (Verifikasi signature penuh via JWKS = hardening lanjutan.)
-            if (!validateIdToken(tokens.idToken, issuedClientId, nonce)) return null
-            tokens
-        } catch (_: Exception) {
-            null
+
+            // --- Tahap 1: POST ke token endpoint ---
+            val (json, status, errJson) = postFormFull(TOKEN_URL, body)
+            if (status == -1) {
+                android.util.Log.e(TAG, "exchangeCode: token request gagal total (jaringan/exception)")
+                return ExchangeResult.Error(
+                    "Tidak bisa menghubungi server token. Cek koneksi internet lalu coba lagi.",
+                )
+            }
+            if (status !in 200..299) {
+                val errCode = errJson?.optString("error")?.takeIf { it.isNotBlank() }
+                // error_description aman di-log: berisi kode alasan OAuth, bukan rahasia.
+                val errDesc = errJson?.optString("error_description")
+                    ?.takeIf { it.isNotBlank() }?.take(200)
+                android.util.Log.e(
+                    TAG,
+                    "exchangeCode: token endpoint HTTP $status" +
+                        (if (errCode != null) ", error=$errCode" else "") +
+                        (if (errDesc != null) ", desc=$errDesc" else ", tanpa error body"),
+                )
+                return ExchangeResult.Error(
+                    if (errCode != null) "Server token menolak (HTTP $status: $errCode). Coba lagi."
+                    else "Server token tidak merespons (HTTP $status). Coba lagi.",
+                )
+            }
+            if (json == null) {
+                android.util.Log.e(TAG, "exchangeCode: HTTP $status tapi body bukan JSON")
+                return ExchangeResult.Error(
+                    "Respons server token tidak dikenali (HTTP $status). Coba lagi.",
+                )
+            }
+
+            // --- Tahap 2: parse token ---
+            val access = json.optString("access_token").takeIf { it.isNotBlank() }
+            if (access == null) {
+                val fields = json.keys().asSequence().toList().joinToString(",")
+                android.util.Log.e(
+                    TAG,
+                    "exchangeCode: HTTP 200 tanpa access_token (field yang ada: $fields)",
+                )
+                return ExchangeResult.Error("Token tidak berisi access_token. Coba lagi.")
+            }
+            val tokens = tokensFromJson(json)
+                ?: return ExchangeResult.Error("Token tidak berisi access_token. Coba lagi.")
+
+            // --- Tahap 3: validasi ID token ---
+            val idToken = tokens.idToken
+            if (idToken.isNullOrBlank()) {
+                // Token endpoint tidak selalu mengembalikan id_token; jangan
+                // gagalkan login karenanya — access token tetap bisa dipakai.
+                android.util.Log.w(
+                    TAG,
+                    "exchangeCode: respons tanpa id_token — validasi ID token dilewati",
+                )
+                android.util.Log.i(TAG, "exchangeCode: sukses (tanpa id_token)")
+                return ExchangeResult.Ok(tokens)
+            }
+            val idError = validateIdTokenError(idToken, issuedClientId, nonce)
+            if (idError != null) {
+                android.util.Log.e(TAG, "exchangeCode: validasi ID token gagal: $idError")
+                return ExchangeResult.Error(idError)
+            }
+            android.util.Log.i(TAG, "exchangeCode: sukses")
+            ExchangeResult.Ok(tokens)
+        } catch (e: Exception) {
+            android.util.Log.e(TAG, "exchangeCode: exception tak terduga: ${e.javaClass.simpleName}")
+            ExchangeResult.Error("Gagal menukar kode login (${e.javaClass.simpleName}). Coba lagi.")
         }
     }
 
@@ -408,26 +489,41 @@ object ChatGptAuth {
     /**
      * Validasi ringan klaim ID token (tanpa verifikasi signature).
      * Memastikan token memang diterbitkan untuk client_id kita.
+     * @return null bila valid, atau pesan error spesifik untuk UI bila tidak.
      */
-    private fun validateIdToken(idToken: String?, expectedAud: String, expectedNonce: String): Boolean {
-        if (idToken.isNullOrBlank()) return false
-        return try {
-            val parts = idToken.split(".")
-            if (parts.size < 2) return false
-            val payloadJson = JSONObject(
+    private fun validateIdTokenError(
+        idToken: String,
+        expectedAud: String,
+        expectedNonce: String,
+    ): String? {
+        val parts = idToken.split(".")
+        if (parts.size < 2) {
+            return "ID token tidak valid: format salah."
+        }
+        val payloadJson = try {
+            JSONObject(
                 String(
                     Base64.getUrlDecoder().decode(parts[1].padBase64()),
                     Charsets.UTF_8,
                 ),
             )
-            val aud = payloadJson.optString("aud")
-            val exp = payloadJson.optLong("exp", 0)
-            val nonce = payloadJson.optString("nonce")
-            val nowSec = System.currentTimeMillis() / 1000
-            aud == expectedAud && exp > nowSec && (nonce.isBlank() || nonce == expectedNonce)
         } catch (_: Exception) {
-            false
+            return "ID token tidak valid: payload rusak."
         }
+        // Klaim "aud" JWT bisa berupa string ATAU array string — tangani keduanya.
+        // (optString pada JSONArray mengembalikan "" sehingga aud selalu
+        // "tidak cocok" bila server mengirim array.)
+        val audOk = when (val audRaw = payloadJson.opt("aud")) {
+            is String -> audRaw == expectedAud
+            is JSONArray -> (0 until audRaw.length()).any { audRaw.optString(it) == expectedAud }
+            else -> false
+        }
+        if (!audOk) return "ID token tidak valid: aud tidak cocok."
+        val exp = payloadJson.optLong("exp", 0)
+        if (exp <= System.currentTimeMillis() / 1000) return "ID token kedaluwarsa."
+        val nonce = payloadJson.optString("nonce")
+        if (nonce.isNotBlank() && nonce != expectedNonce) return "Nonce tidak cocok."
+        return null
     }
 
     private fun String.padBase64(): String {
@@ -536,14 +632,12 @@ object ChatGptAuth {
 
     // ---------- HTTP helpers (tanpa token di log) ----------
 
-    private fun postForm(url: String, body: String): JSONObject? =
-        postFormWithCode(url, body).first
-
     /**
-     * POST form-encoded; mengembalikan pasangan (JSON body, HTTP code).
-     * Code -1 berarti request gagal total (jaringan/exception).
+     * POST form-encoded; mengembalikan triple (JSON body, HTTP code, JSON error body).
+     * Code -1 berarti request gagal total (jaringan/exception). Error body hanya
+     * diisi saat HTTP non-2xx (biasanya berisi kode alasan OAuth, bukan rahasia).
      */
-    private fun postFormWithCode(url: String, body: String): Pair<JSONObject?, Int> {
+    private fun postFormFull(url: String, body: String): Triple<JSONObject?, Int, JSONObject?> {
         var conn: HttpURLConnection? = null
         return try {
             conn = (URL(url).openConnection() as HttpURLConnection).apply {
@@ -555,15 +649,29 @@ object ChatGptAuth {
             }
             conn.outputStream.use { it.write(body.toByteArray(Charsets.UTF_8)) }
             val code = conn.responseCode
-            if (code !in 200..299) return Pair(null, code)
+            if (code !in 200..299) {
+                // B28 — baca error stream agar tahu ALASAN penolakan server
+                // (sebelumnya dibuang: semua non-2xx jadi null tanpa jejak).
+                val errJson = conn.errorStream
+                    ?.bufferedReader()?.readText()
+                    ?.let { runCatching { JSONObject(it) }.getOrNull() }
+                return Triple(null, code, errJson)
+            }
             val text = conn.inputStream.bufferedReader().readText()
-            Pair(runCatching { JSONObject(text) }.getOrNull(), code)
+            Triple(runCatching { JSONObject(text) }.getOrNull(), code, null)
         } catch (_: Exception) {
-            Pair(null, -1)
+            Triple(null, -1, null)
         } finally {
             conn?.disconnect()
         }
     }
+
+    /**
+     * POST form-encoded; mengembalikan pasangan (JSON body, HTTP code).
+     * Code -1 berarti request gagal total (jaringan/exception).
+     */
+    private fun postFormWithCode(url: String, body: String): Pair<JSONObject?, Int> =
+        postFormFull(url, body).let { (json, code, _) -> Pair(json, code) }
 
     // ---------- JWT ----------
 

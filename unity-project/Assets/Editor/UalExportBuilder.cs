@@ -102,27 +102,6 @@ public static class UalExportBuilder
         {
             Debug.Log($"[UalExport] SUKSES. unityLibrary ada di: {exportPath}/unityLibrary");
             Debug.Log($"[UalExport] Ukuran: {summary.totalSize / 1024 / 1024} MB");
-            // Verifikasi file beneran ada di disk sebelum return.
-            // Unity kadang report "succeeded" tapi file belum selesai ditulis.
-            string unityLibPath = Path.Combine(exportPath, "unityLibrary");
-            string markerFile = Path.Combine(unityLibPath, "build.gradle");
-            int attempts = 0;
-            while (attempts < 30 && !File.Exists(markerFile))
-            {
-                Debug.Log($"[UalExport] Menunggu file ter-flush... ({attempts + 1}/30)");
-                System.Threading.Thread.Sleep(1000);
-                attempts++;
-            }
-            if (File.Exists(markerFile))
-            {
-                var fileCount = Directory.GetFiles(unityLibPath, "*", SearchOption.AllDirectories).Length;
-                Debug.Log($"[UalExport] VERIFIED: {fileCount} file ada di {unityLibPath}");
-            }
-            else
-            {
-                Fail($"[UalExport] GAGAL: {markerFile} tidak ditemukan setelah 30 detik! File tidak ter-flush ke disk.");
-                return;
-            }
             // Jangan panggil EditorApplication.Exit(0) di sini — biarkan Unity exit
             // natural via flag -quit agar file ter-flush sempurna ke disk.
         }

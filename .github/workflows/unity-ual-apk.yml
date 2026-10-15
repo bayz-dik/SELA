@@ -58,19 +58,36 @@ jobs:
           name: unityLibrary
           path: android/unity-export/unityLibrary
 
-      - name: Patch unityLibrary build.gradle
+      - name: Replace unityLibrary build.gradle
         run: |
           cd android/unity-export/unityLibrary
-          # Hapus ndkPath yang nggak ada di runner, samakan SDK & Java
-          sed -i 's|ndkPath.*|// ndkPath removed for CI|' build.gradle
-          sed -i 's/compileSdk 36/compileSdk 35/' build.gradle
-          sed -i 's/targetSdk 36/targetSdk 35/' build.gradle
-          sed -i 's/buildToolsVersion "36.0.0"/buildToolsVersion "35.0.0"/' build.gradle
-          sed -i 's/JavaVersion.VERSION_17/JavaVersion.VERSION_21/g' build.gradle
-          # Hapus apply dari shared yang mungkin nggak kompatibel
-          sed -i "s|apply from: '../shared/keepUnitySymbols.gradle'|// removed|" build.gradle
-          sed -i "s|apply from: '../shared/common.gradle'|// removed|" build.gradle
-          head -20 build.gradle
+          # Ganti build.gradle Unity dengan versi minimal yang kompatibel.
+          # build.gradle asli Unity tidak kompatibel (ndkPath absolut, SDK 36, Java 17,
+          # apply from '../shared/...' yang tidak ada).
+          cat > build.gradle << 'EOF'
+          apply plugin: 'com.android.library'
+
+          android {
+              namespace "com.unity3d.player"
+              compileSdk 35
+
+              defaultConfig {
+                  minSdk 26
+                  consumerProguardFiles "proguard-unity.txt"
+              }
+
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_21
+                  targetCompatibility JavaVersion.VERSION_21
+              }
+          }
+
+          dependencies {
+              implementation fileTree(dir: 'libs', include: ['*.jar'])
+          }
+          EOF
+          echo "--- build.gradle replaced ---"
+          cat build.gradle
 
       - name: Set up JDK 21
         uses: actions/setup-java@v4

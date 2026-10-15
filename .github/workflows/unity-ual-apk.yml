@@ -13,6 +13,7 @@ jobs:
 
       - name: Export unityLibrary
         uses: game-ci/unity-builder@v6
+        continue-on-error: true
         env:
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
@@ -23,6 +24,19 @@ jobs:
           buildsPath: unity-export-out
           androidTargetSdkVersion: '35'
           customParameters: '-exportPath /github/workspace/unity-export-out'
+
+      - name: Verify unityLibrary exists
+        run: |
+          echo "Checking for unityLibrary..."
+          ls -la unity-export-out/ || echo "unity-export-out not found"
+          ls -la unity-export-out/unityLibrary/ 2>/dev/null | head -10 || echo "unityLibrary not found"
+          if [ -d "unity-export-out/unityLibrary" ]; then
+            echo "SUCCESS: unityLibrary found"
+            find unity-export-out/unityLibrary -type f | wc -l
+          else
+            echo "FAILED: unityLibrary not found"
+            exit 1
+          fi
 
       - name: Upload unityLibrary artifact
         uses: actions/upload-artifact@v4

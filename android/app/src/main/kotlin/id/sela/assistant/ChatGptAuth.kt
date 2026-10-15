@@ -1,6 +1,7 @@
 package id.sela.assistant
 
 import android.content.Context
+import android.content.Intent
 import android.content.SharedPreferences
 import android.net.Uri
 import androidx.browser.customtabs.CustomTabsIntent
@@ -194,7 +195,12 @@ object ChatGptAuth {
                     .build()
                     .toString()
 
-                CustomTabsIntent.Builder().build().launchUrl(ctx, Uri.parse(url))
+                // ctx adalah applicationContext (bukan Activity), jadi intent butuh
+                // FLAG_ACTIVITY_NEW_TASK agar startActivity() tidak melempar.
+                // Flag ini aman juga jika suatu saat dipanggil dengan Activity context.
+                val tabsIntent = CustomTabsIntent.Builder().build()
+                tabsIntent.intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                tabsIntent.launchUrl(ctx, Uri.parse(url))
 
                 // Tunggu callback di background; user punya 5 menit.
                 // soTimeout pada server membuat accept() melempar

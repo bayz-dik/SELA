@@ -2,8 +2,8 @@ package id.sela.feature.music.data
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import moe.rukamori.archivetune.innertube.SearchFilter
 import moe.rukamori.archivetune.innertube.YouTube
+import moe.rukamori.archivetune.innertube.YouTube.SearchFilter
 import javax.inject.Inject
 import javax.inject.Singleton
 

@@ -120,7 +120,8 @@ public static class UalExportBuilder
             }
             else
             {
-                Debug.LogError($"[UalExport] WARNING: {markerFile} tidak ditemukan setelah 30 detik!");
+                Fail($"[UalExport] GAGAL: {markerFile} tidak ditemukan setelah 30 detik! File tidak ter-flush ke disk.");
+                return;
             }
             // Jangan panggil EditorApplication.Exit(0) di sini — biarkan Unity exit
             // natural via flag -quit agar file ter-flush sempurna ke disk.

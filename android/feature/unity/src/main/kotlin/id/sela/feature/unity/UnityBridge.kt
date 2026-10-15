@@ -95,6 +95,20 @@ class UnityBridge private constructor() {
                 playerClass.getMethod("setRunWithoutFocus", Boolean::class.java)
                     .invoke(newPlayer, true)
             } catch (_: Exception) { /* opsional di versi lama */ }
+            // PENTING: resume player segera setelah dibuat.
+            // Activity.onResume() bisa jalan sebelum Compose membuat player,
+            // sehingga invokePlayer("resume") di onResume() menjadi no-op.
+            // Tanpa resume(), Unity tidak render → black screen.
+            try {
+                playerClass.getMethod("resume").invoke(newPlayer)
+                Log.i(TAG, "UnityPlayer resumed setelah attach")
+            } catch (e: Exception) {
+                Log.w(TAG, "player.resume() setelah attach gagal", e)
+            }
+            // Pastikan view dapat fokus untuk input.
+            try {
+                view.requestFocus()
+            } catch (_: Exception) { }
             scope.launch {
                 // Beri waktu boot, lalu flush antrean saat ready.
                 var tries = 0

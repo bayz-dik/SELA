@@ -4,7 +4,7 @@
         <activity
             android:name=".UnityMapActivity"
             android:exported="false"
-            android:launchMode="singleTask"
+            android:launchMode="singleTop"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|mcc|mnc|density"
             android:theme="@android:style/Theme.NoTitleBar.Fullscreen" />
     </application>

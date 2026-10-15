@@ -42,8 +42,8 @@ NetworkManager:
     ConenctionConfig: 0
   m_MaxConnections: 10
   m_Channels:
-  - QosType: 2
-  - QosType: 0
+    - QosType: 2
+    - QosType: 0
   m_GlobalConfig:
     ReactorModel: SelectReactor
     ThreadAwakeTimeout: 1

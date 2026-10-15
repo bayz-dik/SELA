@@ -46,8 +46,6 @@ PlayerSettings:
   m_DefaultScreenHeightWeb: 1920
   m_MobileMTUseDefault: 0
   m_StackTraceTypes:
-    serializedVersion: 2
-    m_Items:
     - m_Enabled: 0
       m_Value: 0
     - m_Enabled: 1
@@ -228,9 +226,9 @@ PlayerSettings:
   buildTargetIcons: []
   buildTargetBatching: []
   buildTargetGraphicsAPIs:
-  - m_BuildTarget: Android
-    m_APIs: 11
-    m_Automatic: 0
+    - m_BuildTarget: Android
+      m_APIs: 11
+      m_Automatic: 0
   openGLUseES2: 0
   mobileMTRendering: 1
   m_XboxOneDisableEsram: 0

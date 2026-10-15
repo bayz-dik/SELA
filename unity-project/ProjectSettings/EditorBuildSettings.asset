@@ -5,7 +5,7 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 1
-    path: Assets/Scenes/Jakarta3D.unity
-    guid: a749bfa70d08854b1a80d7b8df486aea
+    - enabled: 1
+      path: Assets/Scenes/Jakarta3D.unity
+      guid: a749bfa70d08854b1a80d7b8df486aea
   m_configObjects: {}

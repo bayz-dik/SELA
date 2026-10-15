@@ -25,43 +25,43 @@ GraphicsSettings:
   m_DefaultMobileRenderingPath: 1
   m_TierSettings:
     Standalone:
-    - serializedVersion: 2
-      m_StandardShaderQuality: 2
-      m_ReflectionProbeBlending: 1
-      m_ReflectionProbeBoxProjection: 1
-      m_HDRMode: 1
-      m_HDRModeEnabled: 1
-    - serializedVersion: 2
-      m_StandardShaderQuality: 2
-      m_ReflectionProbeBlending: 1
-      m_ReflectionProbeBoxProjection: 1
-      m_HDRMode: 1
-      m_HDRModeEnabled: 1
-    - serializedVersion: 2
-      m_StandardShaderQuality: 0
-      m_ReflectionProbeBlending: 0
-      m_ReflectionProbeBoxProjection: 0
-      m_HDRMode: 0
-      m_HDRModeEnabled: 0
+      - serializedVersion: 2
+        m_StandardShaderQuality: 2
+        m_ReflectionProbeBlending: 1
+        m_ReflectionProbeBoxProjection: 1
+        m_HDRMode: 1
+        m_HDRModeEnabled: 1
+      - serializedVersion: 2
+        m_StandardShaderQuality: 2
+        m_ReflectionProbeBlending: 1
+        m_ReflectionProbeBoxProjection: 1
+        m_HDRMode: 1
+        m_HDRModeEnabled: 1
+      - serializedVersion: 2
+        m_StandardShaderQuality: 0
+        m_ReflectionProbeBlending: 0
+        m_ReflectionProbeBoxProjection: 0
+        m_HDRMode: 0
+        m_HDRModeEnabled: 0
     Android:
-    - serializedVersion: 2
-      m_StandardShaderQuality: 2
-      m_ReflectionProbeBlending: 1
-      m_ReflectionProbeBoxProjection: 1
-      m_HDRMode: 1
-      m_HDRModeEnabled: 0
-    - serializedVersion: 2
-      m_StandardShaderQuality: 2
-      m_ReflectionProbeBlending: 1
-      m_ReflectionProbeBoxProjection: 1
-      m_HDRMode: 1
-      m_HDRModeEnabled: 0
-    - serializedVersion: 2
-      m_StandardShaderQuality: 0
-      m_ReflectionProbeBlending: 0
-      m_ReflectionProbeBoxProjection: 0
-      m_HDRMode: 0
-      m_HDRModeEnabled: 0
+      - serializedVersion: 2
+        m_StandardShaderQuality: 2
+        m_ReflectionProbeBlending: 1
+        m_ReflectionProbeBoxProjection: 1
+        m_HDRMode: 1
+        m_HDRModeEnabled: 0
+      - serializedVersion: 2
+        m_StandardShaderQuality: 2
+        m_ReflectionProbeBlending: 1
+        m_ReflectionProbeBoxProjection: 1
+        m_HDRMode: 1
+        m_HDRModeEnabled: 0
+      - serializedVersion: 2
+        m_StandardShaderQuality: 0
+        m_ReflectionProbeBlending: 0
+        m_ReflectionProbeBoxProjection: 0
+        m_HDRMode: 0
+        m_HDRModeEnabled: 0
   m_LightmapStripping: 0
   m_FogStripping: 0
   m_InstancingStripping: 0

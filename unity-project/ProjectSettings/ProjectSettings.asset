@@ -10,3 +10,6 @@ PlayerSettings:
   m_CompanyName: SELA
   m_ProductName: SELA 3D
   m_EditorVersion: 6000.6.5f1
+  Android:
+    minSdkVersion: 26
+    targetSdkVersion: 35

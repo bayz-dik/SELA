@@ -1,4 +1,7 @@
 plugins { alias(libs.plugins.android.application); alias(libs.plugins.kotlin.android); alias(libs.plugins.kotlin.compose); alias(libs.plugins.ksp); alias(libs.plugins.hilt); alias(libs.plugins.google.services) }
+
+import java.util.Properties
+
 android {
     namespace = "id.sela"
     compileSdk = 35
@@ -7,7 +10,7 @@ android {
         // TUGAS C: Google OAuth Web Client ID — diisi dari local.properties (google.webClientId).
         // Kosong = Firebase belum dikonfigurasi; login akan menampilkan pesan, BUKAN login palsu.
         val webClientId: String = try {
-            val props = java.util.Properties()
+            val props = Properties()
             val f = rootProject.file("local.properties")
             if (f.exists()) { f.inputStream().use { props.load(it) } }
             props.getProperty("google.webClientId", "")

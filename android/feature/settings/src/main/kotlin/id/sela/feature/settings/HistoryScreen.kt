@@ -1,5 +1,6 @@
 package id.sela.feature.settings
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -31,7 +32,6 @@ private fun formatHour(ts: Long): String =
  * memakai [id.sela.model.TripStats]. Berbagi SettingsViewModel dengan
  * layar Pengaturan (state yang sama, instance terpisah).
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HistoryScreen(
     viewModel: SettingsViewModel = hiltViewModel(),
@@ -41,109 +41,136 @@ fun HistoryScreen(
     val context = LocalContext.current
     val groups = remember(state.history) { groupHistoryByDay(state.history, System.currentTimeMillis()) }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Riwayat perjalanan") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Kembali")
-                    }
-                },
-            )
-        },
-    ) { padding ->
+    Column(
+        Modifier
+            .fillMaxSize()
+            .background(SelaPastel.background)
+            .statusBarsPadding(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
         Column(
-            Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
+            Modifier.widthIn(max = 560.dp).fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+            PastelTopBar("Riwayat perjalanan", onBack, Modifier.padding(horizontal = 16.dp, vertical = 12.dp))
+
             Column(
-                Modifier.widthIn(max = 560.dp).fillMaxWidth(),
+                Modifier
+                    .weight(1f, fill = false)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 state.message?.let { msg ->
-                    SelaNoticeBanner(
+                    PastelNoticeBanner(
                         text = msg,
                         icon = Icons.Default.Info,
-                        tone = SelaNoticeTone.NEUTRAL,
+                        tone = PastelNoticeTone.NEUTRAL,
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }
 
-                // Kartu statistik
-                SelaCard {
-                    SelaSectionTitle("Perjalananmu")
-                    val stats = state.stats
+                // Kartu statistik — hero aurora + maskot + bento
+                PastelCard(
+                    tint = SelaPastel.lavenderSoft,
+                    shadowTint = SelaPastel.lavenderDeep,
+                ) {
                     Row(
-                        Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        SelaStatCard(
-                            value = "${stats.tripsThisWeek}x",
-                            label = "Minggu ini",
-                            icon = Icons.Default.DirectionsBus,
-                            accent = true,
-                            modifier = Modifier.weight(1f),
+                        SelaMascot(
+                            expression = SelaMascotExpression.Happy,
+                            diameter = 72.dp,
+                            bodyColor = SelaPastel.mint,
                         )
-                        SelaStatCard(
-                            value = stats.topRouteName?.take(12) ?: "—",
-                            label = "Rute tersering",
-                            icon = Icons.Default.Route,
-                            modifier = Modifier.weight(1f),
-                        )
-                        SelaStatCard(
-                            value = stats.topStopName?.take(12) ?: "—",
-                            label = "Halte tersering",
-                            icon = Icons.Default.LocationOn,
-                            modifier = Modifier.weight(1f),
-                        )
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            PastelSectionTitle("Perjalananmu")
+                            Text(
+                                "Jejak bus-bus yang kamu naiki.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = SelaPastel.inkSoft,
+                            )
+                        }
+                    }
+                    val stats = state.stats
+                    BentoGrid(columns = 3) {
+                        cell {
+                            PastelStatCell(
+                                value = "${stats.tripsThisWeek}x",
+                                label = "Minggu ini",
+                                icon = Icons.Default.DirectionsBus,
+                                tint = SelaPastel.blueSoft,
+                                deep = SelaPastel.blueDeep,
+                            )
+                        }
+                        cell {
+                            PastelStatCell(
+                                value = stats.topRouteName?.take(10) ?: "—",
+                                label = "Rute tersering",
+                                icon = Icons.Default.Route,
+                                tint = SelaPastel.mintSoft,
+                                deep = SelaPastel.mintDeep,
+                            )
+                        }
+                        cell {
+                            PastelStatCell(
+                                value = stats.topStopName?.take(10) ?: "—",
+                                label = "Halte tersering",
+                                icon = Icons.Default.LocationOn,
+                                tint = SelaPastel.peachSoft,
+                                deep = SelaPastel.peachDeep,
+                            )
+                        }
                     }
                 }
 
                 // Statistik gila (#80) — estimasi kasar, untuk hiburan
                 if (state.wildStats.totalTrips > 0) {
-                    SelaCard {
-                        SelaSectionTitle("Statistik gila")
+                    PastelCard(tint = SelaPastel.peachSoft, shadowTint = SelaPastel.peachDeep) {
+                        PastelSectionTitle("Statistik gila")
                         Text(
                             "Semua angka estimasi kasar, bukan data resmi.",
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = SelaPastel.inkSoft,
                         )
                         val wild = state.wildStats
-                        Row(
-                            Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        ) {
-                            SelaStatCard(
-                                value = "${"%.0f".format(wild.estimatedKm)} km",
-                                label = "Estimasi jarak",
-                                icon = Icons.Default.Route,
-                                modifier = Modifier.weight(1f),
-                            )
-                            SelaStatCard(
-                                value = "${"%.1f".format(wild.jakartaBaliX)}x",
-                                label = "Jakarta–Bali",
-                                icon = Icons.Default.Public,
-                                modifier = Modifier.weight(1f),
-                            )
-                            SelaStatCard(
-                                value = "${wild.longestStreakDays} hari",
-                                label = "Streak terpanjang",
-                                icon = Icons.Default.LocalFireDepartment,
-                                modifier = Modifier.weight(1f),
-                            )
+                        BentoGrid(columns = 3) {
+                            cell {
+                                PastelStatCell(
+                                    value = "${"%.0f".format(wild.estimatedKm)} km",
+                                    label = "Estimasi jarak",
+                                    icon = Icons.Default.Route,
+                                    tint = SelaPastel.sunny.copy(alpha = 0.4f),
+                                    deep = SelaPastel.sunnyDeep,
+                                )
+                            }
+                            cell {
+                                PastelStatCell(
+                                    value = "${"%.1f".format(wild.jakartaBaliX)}x",
+                                    label = "Jakarta–Bali",
+                                    icon = Icons.Default.Public,
+                                    tint = SelaPastel.purpleSoft,
+                                    deep = SelaPastel.purpleDeep,
+                                )
+                            }
+                            cell {
+                                PastelStatCell(
+                                    value = "${wild.longestStreakDays} hari",
+                                    label = "Streak terpanjang",
+                                    icon = Icons.Default.LocalFireDepartment,
+                                    tint = SelaPastel.pinkSoft,
+                                    deep = SelaPastel.pinkDeep,
+                                )
+                            }
                         }
                     }
                 }
 
                 // Badge gamifikasi (#18)
                 if (state.badges.isNotEmpty()) {
-                    SelaCard {
-                        SelaSectionTitle("Lencana")
+                    PastelCard(tint = SelaPastel.sunny.copy(alpha = 0.35f), shadowTint = SelaPastel.sunnyDeep) {
+                        PastelSectionTitle("Lencana")
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Gamification.ALL.filter { it.id in state.badges }.forEach { badge ->
                                 Row(
@@ -151,10 +178,23 @@ fun HistoryScreen(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                                 ) {
-                                    Icon(Icons.Default.EmojiEvents, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                    Surface(
+                                        shape = CircleShape,
+                                        color = SelaPastel.sunny.copy(alpha = 0.6f),
+                                        modifier = Modifier.size(44.dp),
+                                    ) {
+                                        Box(contentAlignment = Alignment.Center) {
+                                            Icon(
+                                                Icons.Default.EmojiEvents,
+                                                contentDescription = null,
+                                                tint = SelaPastel.sunnyDeep,
+                                                modifier = Modifier.size(22.dp),
+                                            )
+                                        }
+                                    }
                                     Column {
-                                        Text(badge.name, style = MaterialTheme.typography.titleSmall)
-                                        Text(badge.desc, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        Text(badge.name, style = MaterialTheme.typography.titleSmall, color = SelaPastel.ink)
+                                        Text(badge.desc, style = MaterialTheme.typography.bodySmall, color = SelaPastel.inkSoft)
                                     }
                                 }
                             }
@@ -164,14 +204,14 @@ fun HistoryScreen(
 
                 // Jejak karbon (#20) + Time capsule (#30)
                 if (state.allHistory.isNotEmpty()) {
-                    SelaCard {
-                        SelaSectionTitle("Jejak karbon")
+                    PastelCard(tint = SelaPastel.mintSoft, shadowTint = SelaPastel.mintDeep) {
+                        PastelSectionTitle("Jejak karbon")
                         Text(
                             "Estimasi kasar: ${"%.1f".format(state.carbonKg)} kg CO₂ hemat vs naik motor (7,5 km × 60 g/km per perjalanan).",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = SelaPastel.inkSoft,
                         )
-                        SelaGhostButton("Bagikan", {
+                        PastelTextButton("Bagikan", {
                             val text = CarbonFootprint.shareText(state.carbonKg)
                             val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
                                 type = "text/plain"
@@ -181,12 +221,12 @@ fun HistoryScreen(
                         })
                     }
                     state.timeCapsule?.let { trip ->
-                        SelaCard {
-                            SelaSectionTitle("Kapsul waktu")
+                        PastelCard(tint = SelaPastel.blueSoft, shadowTint = SelaPastel.blueDeep) {
+                            PastelSectionTitle("Kapsul waktu")
                             Text(
                                 "Setahun lalu, jam segini kamu naik ${trip.routeName.ifBlank { trip.routeId }}${trip.stopName?.let { " dari $it" } ?: ""}.",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                color = SelaPastel.inkSoft,
                             )
                         }
                     }
@@ -194,24 +234,24 @@ fun HistoryScreen(
 
                 // Daftar per hari
                 if (groups.isEmpty()) {
-                    SelaCard {
-                        SelaSectionTitle("Belum ada riwayat")
-                        Text(
+                    PastelCard {
+                        PastelSectionTitle("Belum ada riwayat")
+                        PastelEmptyState(
                             "Pilih rute atau halte di peta untuk mulai mencatat perjalanan.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            mascotSize = 80.dp,
                         )
                     }
                 } else {
                     groups.forEach { group ->
-                        SelaCard {
-                            SelaSectionTitle(group.label)
+                        PastelCard {
+                            PastelSectionTitle(group.label)
                             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                 group.entries.forEach { h ->
                                     Column(Modifier.padding(vertical = 6.dp)) {
                                         Text(
                                             h.routeName.ifBlank { "Perjalanan" },
                                             style = MaterialTheme.typography.bodyMedium,
+                                            color = SelaPastel.ink,
                                             maxLines = 1,
                                         )
                                         Text(
@@ -220,10 +260,10 @@ fun HistoryScreen(
                                                 append(" · ${formatHour(h.timestamp)}")
                                             },
                                             style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            color = SelaPastel.inkSoft,
                                         )
                                     }
-                                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                                    HorizontalDivider(color = SelaPastel.hairline)
                                 }
                             }
                         }
@@ -232,13 +272,13 @@ fun HistoryScreen(
                         Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        SelaGhostButton("Ekspor CSV", { viewModel.exportCsv { csv -> shareCsv(context, csv) } })
-                        SelaGhostButton("Hapus riwayat", viewModel::clearHistory, destructive = true)
+                        PastelTextButton("Ekspor CSV", { viewModel.exportCsv { csv -> shareCsv(context, csv) } })
+                        PastelTextButton("Hapus riwayat", viewModel::clearHistory, destructive = true)
                     }
                     Text(
                         "Ekspor CSV hanya teks — bagikan ke aplikasi pilihanmu.",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = SelaPastel.inkSoft,
                     )
                 }
                 Spacer(Modifier.navigationBarsPadding())

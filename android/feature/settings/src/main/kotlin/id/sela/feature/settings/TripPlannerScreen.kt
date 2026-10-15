@@ -1,5 +1,6 @@
 package id.sela.feature.settings
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -25,6 +26,7 @@ import id.sela.model.Route
 import id.sela.model.Stop
 import id.sela.model.TripPlan
 import id.sela.model.TripPlanner
+import id.sela.model.displayServiceType
 import id.sela.network.StandaloneTransitRepository
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -118,33 +120,42 @@ private fun StopPicker(
             trailingIcon = {
                 if (query.isNotBlank()) {
                     IconButton(onClick = { query = ""; onSelect(null) }) {
-                        Icon(Icons.Default.Clear, contentDescription = "Hapus")
+                        Icon(Icons.Default.Clear, contentDescription = "Hapus", tint = SelaPastel.inkSoft)
                     }
                 }
             },
             singleLine = true,
-            shape = SelaTokens.field,
+            shape = SelaPastelShapes.field,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = SelaPastel.blueDeep,
+                unfocusedBorderColor = SelaPastel.hairline,
+                focusedLabelColor = SelaPastel.blueDeep,
+                unfocusedLabelColor = SelaPastel.inkSoft,
+                cursorColor = SelaPastel.blueDeep,
+                focusedContainerColor = androidx.compose.ui.graphics.Color.White,
+                unfocusedContainerColor = androidx.compose.ui.graphics.Color.White,
+            ),
             modifier = Modifier.fillMaxWidth(),
         )
         if (suggestions.isNotEmpty()) {
-            SelaCard {
+            PastelCard(contentPadding = PaddingValues(8.dp)) {
                 LazyColumn(Modifier.heightIn(max = 220.dp)) {
                     items(suggestions, key = { it.id }) { stop ->
                         Row(
                             Modifier
                                 .fillMaxWidth()
                                 .clickable { onSelect(stop); query = stop.name }
-                                .padding(vertical = 10.dp, horizontal = 4.dp),
+                                .padding(vertical = 10.dp, horizontal = 12.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
                             Icon(
                                 Icons.Default.DirectionsBus,
                                 contentDescription = null,
-                                tint = SelaPalette.volt,
+                                tint = SelaPastel.mintDeep,
                                 modifier = Modifier.size(20.dp),
                             )
-                            Text(stop.name, style = MaterialTheme.typography.bodyMedium)
+                            Text(stop.name, style = MaterialTheme.typography.bodyMedium, color = SelaPastel.ink)
                         }
                     }
                 }
@@ -155,7 +166,10 @@ private fun StopPicker(
 
 @Composable
 private fun PlanCard(plan: TripPlan) {
-    SelaCard {
+    PastelCard(
+        tint = if (plan.isDirect) SelaPastel.mintSoft else SelaPastel.lavenderSoft,
+        shadowTint = if (plan.isDirect) SelaPastel.mintDeep else SelaPastel.lavenderDeep,
+    ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -163,12 +177,13 @@ private fun PlanCard(plan: TripPlan) {
             Icon(
                 if (plan.isDirect) Icons.Default.DirectionsBus else Icons.Default.SyncAlt,
                 contentDescription = null,
-                tint = SelaPalette.volt,
+                tint = if (plan.isDirect) SelaPastel.mintDeep else SelaPastel.lavenderDeep,
             )
             Text(
                 if (plan.isDirect) "Langsung — tanpa transit"
                 else "1x transit",
                 style = MaterialTheme.typography.titleSmall,
+                color = SelaPastel.ink,
                 modifier = Modifier.semantics { heading() },
             )
         }
@@ -183,13 +198,13 @@ private fun PlanCard(plan: TripPlan) {
                         Icon(
                             Icons.Default.SwapVert,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            tint = SelaPastel.inkSoft,
                             modifier = Modifier.size(20.dp),
                         )
                         Text(
                             "Transit di halte ${leg.toStop.name}",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = SelaPastel.inkSoft,
                         )
                     }
                 }
@@ -200,27 +215,33 @@ private fun PlanCard(plan: TripPlan) {
 
 @Composable
 private fun LegRow(index: Int, leg: Leg) {
+    val type = leg.route.displayServiceType
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        SelaRouteBadge(leg.route.shortName)
+        PastelRouteBadge(
+            leg.route.shortName,
+            tint = type.pastelColor(),
+            deep = type.pastelDeepColor(),
+        )
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(
                 "Naik ${leg.route.shortName.ifBlank { leg.route.id }}",
                 style = MaterialTheme.typography.bodyMedium,
+                color = SelaPastel.ink,
             )
             Text(
                 "${leg.fromStop.name} → ${leg.toStop.name}",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = SelaPastel.inkSoft,
             )
         }
         if (index == 0) {
             Text(
                 "Berangkat",
                 style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.primary,
+                color = SelaPastel.blueDeep,
             )
         }
     }
@@ -233,7 +254,6 @@ private fun LegRow(index: Int, leg: Leg) {
  * JUJUR: ini perutean struktural (halte↔rute), bukan jadwal:
  * tidak tahu jam keberangkatan maupun waktu tempuh.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TripPlannerScreen(
     viewModel: TripPlannerViewModel = hiltViewModel(),
@@ -243,65 +263,79 @@ fun TripPlannerScreen(
     val origin = state.stops.find { it.id == state.originId }
     val dest = state.stops.find { it.id == state.destId }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Perencana perjalanan") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Kembali")
-                    }
-                },
-            )
-        },
-    ) { padding ->
+    Column(
+        Modifier
+            .fillMaxSize()
+            .background(SelaPastel.background)
+            .statusBarsPadding(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
         Column(
-            Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
+            Modifier.widthIn(max = 560.dp).fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+            PastelTopBar("Perencana perjalanan", onBack, Modifier.padding(horizontal = 16.dp, vertical = 12.dp))
+
             Column(
-                Modifier.widthIn(max = 560.dp).fillMaxWidth(),
+                Modifier
+                    .weight(1f, fill = false)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                SelaCard {
-                    SelaSectionTitle("Rute perjalanan")
+                PastelCard(tint = SelaPastel.blueSoft, shadowTint = SelaPastel.blueDeep) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        SelaMascot(
+                            expression = SelaMascotExpression.Happy,
+                            diameter = 64.dp,
+                            bodyColor = SelaPastel.blue,
+                        )
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            PastelSectionTitle("Rute perjalanan")
+                            Text(
+                                "Pilih halte asal & tujuan.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = SelaPastel.inkSoft,
+                            )
+                        }
+                    }
                     StopPicker("Dari halte", state.stops, origin, { viewModel.setOrigin(it?.id) })
                     Row(
                         Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.End,
                     ) {
-                        SelaGhostButton(
+                        PastelTextButton(
                             text = "Tukar",
                             onClick = viewModel::swap,
                             enabled = origin != null || dest != null,
                         )
                     }
                     StopPicker("Ke halte", state.stops, dest, { viewModel.setDest(it?.id) })
-                    SelaPrimaryButton(
+                    SelaButton(
                         text = "Rencanakan perjalanan",
                         onClick = viewModel::plan,
+                        style = SelaButtonStyle.Primary,
                         enabled = origin != null && dest != null,
+                        icon = Icons.Default.Route,
                         modifier = Modifier.fillMaxWidth(),
                     )
                     Text(
                         "Rencana struktural dari data statis di perangkat — bukan jadwal keberangkatan.",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = SelaPastel.inkSoft,
                     )
                 }
 
                 if (state.searched) {
                     if (state.plans.isEmpty()) {
-                        SelaCard {
-                            SelaSectionTitle("Tidak ada rute")
-                            Text(
+                        PastelCard {
+                            PastelSectionTitle("Tidak ada rute")
+                            PastelEmptyState(
                                 "Tidak ditemukan kombinasi rute yang melayani kedua halte. Coba halte lain yang berdekatan.",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                mascotSize = 80.dp,
                             )
                         }
                     } else {

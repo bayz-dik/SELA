@@ -294,3 +294,28 @@ fun PastelPulseDot(
         ) {}
     }
 }
+
+/**
+ * Sel statistik bento pastel — angka besar + label + ikon.
+ * Untuk ringkasan di Riwayat & Pengaturan.
+ */
+@Composable
+fun PastelStatCell(
+    value: String,
+    label: String,
+    icon: ImageVector,
+    tint: Color,
+    deep: Color,
+    modifier: Modifier = Modifier,
+) {
+    PastelCard(
+        tint = tint,
+        shadowTint = deep,
+        modifier = modifier,
+        contentPadding = PaddingValues(16.dp),
+    ) {
+        Icon(icon, contentDescription = null, tint = deep, modifier = Modifier.size(22.dp))
+        Text(value, style = MaterialTheme.typography.headlineSmall, color = SelaPastel.ink, maxLines = 1)
+        Text(label, style = MaterialTheme.typography.labelMedium, color = SelaPastel.inkSoft)
+    }
+}

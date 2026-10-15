@@ -44,7 +44,6 @@ PlayerSettings:
   m_DefaultScreenHeight: 1920
   m_DefaultScreenWidthWeb: 1080
   m_DefaultScreenHeightWeb: 1920
-  m_MobileMTRendering: 1
   m_MobileMTUseDefault: 0
   m_StackTraceTypes:
     serializedVersion: 2

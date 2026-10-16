@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.ChatBubble
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -114,7 +115,7 @@ fun V7AskScreen() {
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
-                    Icons.Default.Chat,
+                    Icons.Filled.ChatBubble,
                     contentDescription = null,
                     tint = SelaV7.ink,
                     modifier = Modifier.size(26.dp),
@@ -196,7 +197,7 @@ fun V7AskScreen() {
                             contentAlignment = Alignment.Center,
                         ) {
                             Icon(
-                                Icons.Default.Chat,
+                                Icons.Filled.ChatBubble,
                                 contentDescription = null,
                                 tint = SelaV7.ink,
                                 modifier = Modifier.size(20.dp),
@@ -268,7 +269,7 @@ private fun V7ChatBubble(message: V7ChatMessage) {
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
-                    Icons.Default.Chat,
+                    Icons.Filled.ChatBubble,
                     contentDescription = null,
                     tint = SelaV7.ink,
                     modifier = Modifier.size(18.dp),

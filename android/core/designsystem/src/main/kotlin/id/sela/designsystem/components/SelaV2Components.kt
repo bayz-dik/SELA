@@ -35,7 +35,7 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun SelaAuroraBackground(modifier: Modifier = Modifier, content: @Composable BoxScope.() -> Unit) {
     Box(modifier.background(
-        Brush.verticalGradient(listOf(Color(0xFFE9EEFF), Color(0xFFF7F2FF), SelaPastel.background),
+        Brush.verticalGradient(listOf(SelaPastel.blueSoft, SelaPastel.pinkSoft, SelaPastel.background),
             startY = 0f, endY = 1600f)
     ), content = content)
 }
@@ -54,7 +54,7 @@ fun SelaHeroPanel(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(36.dp))
-            .background(Brush.linearGradient(listOf(Color(0xFFCEE2FF), Color(0xFFE6D8FF), Color(0xFFF8DCEB))))
+            .background(Brush.linearGradient(listOf(SelaPastel.blueSoft, SelaPastel.lavenderSoft, SelaPastel.pinkSoft)))
     ) {
         // Small light blooms make the surface feel softer than a Material card.
         Box(Modifier.align(Alignment.TopEnd).offset(x = 24.dp, y = (-54).dp)
@@ -79,13 +79,13 @@ fun SelaHeroPanel(
                     Text(title, color = SelaPastel.ink, style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.ExtraBold, lineHeight = 34.sp)
                     Spacer(Modifier.height(8.dp))
-                    Text(subtitle, color = Color(0xFF4D5478), style = MaterialTheme.typography.bodyMedium,
+                    Text(subtitle, color = SelaPastel.inkSoft, style = MaterialTheme.typography.bodyMedium,
                         lineHeight = 20.sp)
                 }
                 SelaMascot(
                     expression = mascotExpression,
                     diameter = 110.dp,
-                    bodyColor = Color(0xFFAAEBCF),
+                    bodyColor = SelaPastel.mint,
                     contentDescription = "Teman perjalanan SELA",
                 )
             }
@@ -161,7 +161,7 @@ fun SelaTransitLine(
 ) {
     Surface(onClick = onClick, modifier = modifier.fillMaxWidth(),
         color = Color.White, shape = RoundedCornerShape(24.dp),
-        border = BorderStroke(1.dp, Color(0xFFF1EAF7))) {
+        border = BorderStroke(1.dp, SelaPastel.hairline)) {
         Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(13.dp)) {
             Surface(color = tint, shape = RoundedCornerShape(15.dp)) {
@@ -187,7 +187,7 @@ fun SelaTransitLine(
 
 @Composable
 fun SelaLivePill(connected: Boolean, label: String, modifier: Modifier = Modifier) {
-    Surface(modifier = modifier, color = if (connected) Color(0xFFDDF7E8) else Color(0xFFFFEBD9),
+    Surface(modifier = modifier, color = if (connected) SelaPastel.mintSoft else SelaPastel.peachSoft,
         shape = RoundedCornerShape(50.dp)) {
         Row(Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
             verticalAlignment = Alignment.CenterVertically,

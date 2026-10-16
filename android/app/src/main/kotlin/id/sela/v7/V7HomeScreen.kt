@@ -117,12 +117,12 @@ fun V7HomeScreen(
 
         // 6 shortcut — ikon monokrom dalam lingkaran surfaceDim
         val shortcuts = listOf(
-            Triple("Peta", Icons.Default.Map) to onOpenMap,
-            Triple("Rute", Icons.Default.Route) to onPlanTrip,
-            Triple("Musik", Icons.Default.MusicNote) to onOpenMusic,
-            Triple("Tanya", Icons.Default.Chat) to onOpenAssistant,
-            Triple("Favorit", Icons.Default.Favorite) to onOpenFavorites,
-            Triple("Lainnya", Icons.Default.MoreHoriz) to onOpenOther,
+            Pair("Peta", Icons.Default.Map) to onOpenMap,
+            Pair("Rute", Icons.Default.Route) to onPlanTrip,
+            Pair("Musik", Icons.Default.MusicNote) to onOpenMusic,
+            Pair("Tanya", Icons.Default.Chat) to onOpenAssistant,
+            Pair("Favorit", Icons.Default.Favorite) to onOpenFavorites,
+            Pair("Lainnya", Icons.Default.MoreHoriz) to onOpenOther,
         )
         Column(
             modifier = Modifier.padding(horizontal = 8.dp),

@@ -97,7 +97,14 @@ interface ThemePrefsEntryPoint {
 
 @AndroidEntryPoint class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Phase log untuk diagnosis crash startup
+        runCatching {
+            java.io.File(cacheDir, "sela-startup.log").appendText("${java.util.Date()} - MAIN_ACTIVITY_ONCREATE\n")
+        }
         super.onCreate(savedInstanceState)
+        runCatching {
+            java.io.File(cacheDir, "sela-startup.log").appendText("${java.util.Date()} - MAIN_SUPER_DONE\n")
+        }
         enableEdgeToEdge()
         requestNotificationPermissionOnce()
         // Fitur #66/#121/#122: terapkan mode aksesibilitas (lansia/anak/tunanetra)
@@ -119,6 +126,9 @@ interface ThemePrefsEntryPoint {
             }
         }
         setContent {
+            runCatching {
+                java.io.File(cacheDir, "sela-startup.log").appendText("${java.util.Date()} - SETCONTENT_START\n")
+            }
             val prefs = remember {
                 EntryPointAccessors.fromApplication(
                     applicationContext, ThemePrefsEntryPoint::class.java).prefs()

@@ -35,6 +35,16 @@ interface SelaAppEntryPoint {
 @HiltAndroidApp
 class SelaApplication : Application() {
     override fun onCreate() {
+        // Phase logger: catat setiap tahap startup ke crash log agar bisa
+        // didiagnosis jika app crash. Ditulis langsung (bukan via MediaStore
+        // yang butuh context), append ke file di cache dir.
+        fun phase(name: String) {
+            runCatching {
+                val logFile = java.io.File(cacheDir, "sela-startup.log")
+                logFile.appendText("${java.util.Date()} - $name\n")
+            }
+        }
+        phase("APP_START")
         // Crash capturer: tulis stack trace ke Download/sela-crash.log via MediaStore
         // (works di Android 10+ tanpa permission) agar bisa dibuka Bayu via file
         // manager, lalu CHAIN ke default handler agar dialog crash tetap muncul.
@@ -42,15 +52,23 @@ class SelaApplication : Application() {
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
             runCatching {
                 val trace = android.util.Log.getStackTraceString(throwable)
-                val info = "SELA Crash - ${java.util.Date()}\nThread: ${thread.name}\n$trace\n---\n"
+                // Sertakan startup phases agar tahu sejauh mana app jalan
+                val phases = runCatching {
+                    java.io.File(cacheDir, "sela-startup.log").readText()
+                }.getOrDefault("(no phase log)")
+                val info = "SELA Crash - ${java.util.Date()}\nThread: ${thread.name}\nSTARTUP PHASES:\n$phases\nSTACK:\n$trace\n---\n"
                 writeCrashLog(this, info)
             }
             defaultHandler?.uncaughtException(thread, throwable)
         }
+        phase("CRASH_HANDLER_SET")
         super.onCreate()
+        phase("SUPER_ONCREATE_DONE")
         runCatching { SelaNotifications.createChannels(this) }
+        phase("NOTIF_CHANNELS_DONE")
         // Tanya Sela: siapkan penyimpanan token ChatGPT terenkripsi
         runCatching { id.sela.assistant.ChatGptAuth.init(this) }
+        phase("CHATGPT_AUTH_DONE")
         val entry = runCatching {
             EntryPoints.get(this, SelaAppEntryPoint::class.java)
         }.getOrNull() ?: return

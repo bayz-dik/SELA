@@ -145,4 +145,74 @@ object SelaAiClient {
      * Delegasi ke [SelaAiLogic] agar bisa di-unit-test.
      */
     fun parseAnswer(jsonText: String): String? = SelaAiLogic.parseAnswer(jsonText)
+
+    /**
+     * Daftar model yang benar-benar tersedia untuk akun pengguna.
+     * Diambil dari `GET /v1/models` memakai token pengguna sendiri,
+     * jadi GPT-5 / GPT-6 / Astra muncul hanya jika akun memang entitled.
+     * Kembalikan [MODELS] (fallback statis) bila request gagal.
+     */
+    suspend fun availableModels(): List<String> = withContext(Dispatchers.IO) {
+        val token = ChatGptAuth.getAccessToken() ?: return@withContext MODELS
+        var conn: HttpURLConnection? = null
+        try {
+            conn = (URL("$MODELS_URL").openConnection() as HttpURLConnection).apply {
+                requestMethod = "GET"
+                connectTimeout = 15000
+                readTimeout = 20000
+                setRequestProperty("Authorization", "Bearer $token")
+            }
+            if (conn.responseCode !in 200..299) return@withContext MODELS
+            val ids = mutableListOf<String>()
+            val data = JSONObject(conn.inputStream.bufferedReader().readText())
+                .optJSONArray("data") ?: return@withContext MODELS
+            for (i in 0 until data.length()) {
+                data.optJSONObject(i)?.optString("id")?.takeIf { it.isNotBlank() }?.let {
+                    ids.add(it)
+                }
+            }
+            val chatModels = ids.filter { isChatModel(it) }
+            if (chatModels.isEmpty()) MODELS else chatModels.sortedWith(MODEL_ORDER)
+        } catch (_: Exception) {
+            MODELS
+        } finally {
+            conn?.disconnect()
+        }
+    }
+
+    private const val MODELS_URL = "https://api.openai.com/v1/models"
+
+    /** Filter kasar: hanya model chat/completions, bukan embedding/audio/tts/moderasi. */
+    private fun isChatModel(id: String): Boolean {
+        val lower = id.lowercase()
+        if (lower.contains("embed") || lower.contains("tts") || lower.contains("whisper") ||
+            lower.contains("dall-e") || lower.contains("moderation") || lower.contains("audio") ||
+            lower.contains("realtime") || lower.contains("transcribe")
+        ) return false
+        return lower.startsWith("gpt-") || lower.startsWith("o1") || lower.startsWith("o3") ||
+            lower.startsWith("o4") || lower.contains("astra")
+    }
+
+    /** Urutan tampil: terbaru/terbaik dulu, lalu alfabet. */
+    private val MODEL_ORDER = Comparator<String> { a, b ->
+        val rankA = modelRank(a)
+        val rankB = modelRank(b)
+        if (rankA != rankB) rankA.compareTo(rankB) else a.compareTo(b)
+    }
+
+    private fun modelRank(id: String): Int {
+        val lower = id.lowercase()
+        return when {
+            lower.contains("astra") -> 0
+            lower.startsWith("gpt-6") -> 1
+            lower.startsWith("gpt-5") -> 2
+            lower.startsWith("o4") -> 3
+            lower.startsWith("o3") -> 4
+            lower.startsWith("gpt-4.1") -> 5
+            lower.startsWith("gpt-4o") -> 6
+            lower.startsWith("gpt-4") -> 7
+            lower.startsWith("o1") -> 8
+            else -> 9
+        }
+    }
 }

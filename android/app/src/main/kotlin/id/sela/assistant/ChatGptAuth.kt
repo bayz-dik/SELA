@@ -315,7 +315,7 @@ object ChatGptAuth {
 
             // Balas browser dengan halaman sukses sederhana.
             val html = "<html><body style='font-family:sans-serif;text-align:center;" +
-                "padding-top:40px'><h2>Login SELA berhasil ✅</h2>" +
+                "padding-top:40px'><h2>Login SELA berhasil</h2>" +
                 "<p>Kembali ke aplikasi SELA ya.</p></body></html>"
             val body = html.toByteArray(Charsets.UTF_8)
             val out = s.getOutputStream()

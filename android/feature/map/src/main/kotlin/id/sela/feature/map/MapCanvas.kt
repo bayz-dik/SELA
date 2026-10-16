@@ -33,6 +33,9 @@ import org.maplibre.android.maps.MapView
 import org.maplibre.android.maps.Style
 
 private const val TAG = "SelaMap"
+
+/** Batas marker bus di peta agar tidak bertumpuk menutupi tampilan. */
+private const val MAX_VEHICLE_MARKERS = 120
 /**
  * B24: batas tunggu style selesai dimuat (sukses/gagal) sebelum percobaan
  * dianggap gagal — menangani jaringan macet yang tak memicu callback apa pun.
@@ -318,13 +321,29 @@ fun MapCanvas(state: MapUiState, styleUrl: String, modifier: Modifier = Modifier
             markerIds[marker.id] = "stop" to stop.id
         }
     }
-    LaunchedEffect(map, styleReady, styleEpoch, state.data.vehicles, routes, state.filter) {
+    LaunchedEffect(map, styleReady, styleEpoch, state.data.vehicles, routes, state.filter, state.visibleBounds, state.selectedRouteId) {
         val nativeMap = map ?: return@LaunchedEffect
         if (!styleReady) return@LaunchedEffect
-        val vehicles = state.data.vehicles.filter { vehicle ->
-            !vehicle.isStale && (state.filter == null || routes[vehicle.routeId]?.displayServiceType == state.filter) &&
-                vehicle.lat in -90.0..90.0 && vehicle.lon in -180.0..180.0
-        }
+        val bounds = state.visibleBounds
+        val selectedRouteId = state.selectedRouteId
+        // BUGFIX: batasi marker bus agar tidak bertumpuk menutupi peta.
+        // 1) Hanya tampilkan bus dalam bounds terlihat. 2) Maks 120 marker —
+        //    prioritaskan rute yang dipilih, lalu yang terdekat ke tengah peta.
+        val centerLat = bounds?.let { (it.south + it.north) / 2 } ?: state.camera.lat
+        val centerLon = bounds?.let { (it.west + it.east) / 2 } ?: state.camera.lon
+        val vehicles = state.data.vehicles
+            .filter { vehicle ->
+                !vehicle.isStale && (state.filter == null || routes[vehicle.routeId]?.displayServiceType == state.filter) &&
+                    vehicle.lat in -90.0..90.0 && vehicle.lon in -180.0..180.0 &&
+                    (bounds?.let { vehicle.lat in it.south..it.north && vehicle.lon in it.west..it.east } ?: true)
+            }
+            .sortedWith(
+                compareBy(
+                    { if (selectedRouteId != null && it.routeId == selectedRouteId) 0 else 1 },
+                    { (it.lat - centerLat) * (it.lat - centerLat) + (it.lon - centerLon) * (it.lon - centerLon) },
+                ),
+            )
+            .take(MAX_VEHICLE_MARKERS)
         removeMissingMarkers(nativeMap, vehicleMarkers, vehicles.mapTo(mutableSetOf()) { it.id }, markerIds)
         vehicles.forEach { vehicle ->
             val color = routes[vehicle.routeId]?.displayServiceType?.pastelColor()?.toArgb() ?: SelaPastel.inkFaint.toArgb()
@@ -376,7 +395,7 @@ fun MapCanvas(state: MapUiState, styleUrl: String, modifier: Modifier = Modifier
                 lastTap = now
                 if (taps >= 3) {
                     taps = 0
-                    errorCallback("RAHASIA TERBUKA 🤫 — Koridor 1: Blok M – Kota (BRT). Ketuk halte untuk ETA live.")
+                    errorCallback("Koridor 1: Blok M – Kota (BRT). Ketuk halte untuk ETA live.")
                 }
                 return false
             }

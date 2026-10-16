@@ -142,10 +142,10 @@ private fun WelcomeContents(onContinue: () -> Unit, lookX: Float, lookY: Float) 
         ) {
             Text("SELA", color = Navy, fontWeight = FontWeight.Black, fontSize = 30.sp)
             Spacer(Modifier.height(58.dp))
-            Text("Yuk, mulai\nperjalananmu!", color = Navy, fontWeight = FontWeight.Black,
+            Text("Mau ke mana?", color = Navy, fontWeight = FontWeight.Black,
                 fontSize = 39.sp, lineHeight = 42.sp, letterSpacing = (-1.7).sp)
             Spacer(Modifier.height(14.dp))
-            Text("Cari rute, pantau bus, dan temukan perjalanan yang lebih mudah.",
+            Text("Cari rute dan pantau bus TransJakarta.",
                 color = Color(0xFF526078), fontSize = 15.sp, lineHeight = 22.sp)
             Spacer(Modifier.height(27.dp))
             Button(
@@ -154,13 +154,6 @@ private fun WelcomeContents(onContinue: () -> Unit, lookX: Float, lookY: Float) 
                 shape = RoundedCornerShape(17.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Navy),
             ) { Text("Mulai dengan Google", fontSize = 16.sp, fontWeight = FontWeight.Bold) }
-            Spacer(Modifier.height(12.dp))
-            OutlinedButton(
-                onClick = onContinue,
-                modifier = Modifier.fillMaxWidth().height(56.dp),
-                shape = RoundedCornerShape(17.dp),
-                border = androidx.compose.foundation.BorderStroke(2.dp, Color(0xFF589600)),
-            ) { Text("Sudah punya akun? Masuk", color = Color(0xFF397400), fontSize = 16.sp, fontWeight = FontWeight.Bold) }
         }
         // TUGAS A: Maskot di-anchor ke bottom dengan padding untuk navigation bar,
         // height 34% memastikan kepala lebih terlihat (naik ~4% viewport).
@@ -200,10 +193,10 @@ private fun LoginContents(
             AnimatedSelaFace(lookX, lookY, backgroundHead = false,
                 modifier = Modifier.fillMaxWidth().height(faceHeight))
             Spacer(Modifier.height(12.dp))
-            Text("Siap jalan bareng?", fontSize = 34.sp, lineHeight = 37.sp,
+            Text("Masuk", fontSize = 34.sp, lineHeight = 37.sp,
                 fontWeight = FontWeight.Black, color = Navy, textAlign = TextAlign.Center)
             Spacer(Modifier.height(12.dp))
-            Text("Masuk dengan Google untuk melanjutkan ke SELA.",
+            Text("Lanjut dengan akun Google.",
                 fontSize = 15.sp, lineHeight = 22.sp, textAlign = TextAlign.Center,
                 color = Color(0xFF3C5114))
             Spacer(Modifier.height(26.dp))

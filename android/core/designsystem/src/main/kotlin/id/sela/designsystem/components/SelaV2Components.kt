@@ -201,7 +201,11 @@ fun SelaLivePill(connected: Boolean, label: String, modifier: Modifier = Modifie
 
 data class SelaDockDestination(val route: String, val label: String, val icon: ImageVector)
 
-/** 5-slot navigation: only active label visible to stay usable on 320dp devices. */
+/**
+ * Dock navigasi bawah SELA — pill mengambang, 6 destinasi.
+ * Item aktif: pill penuh; item lain: ikon + label kecil.
+ * Warna 100% dari token [SelaPastel].
+ */
 @Composable
 fun SelaFloatingDock(
     destinations: List<SelaDockDestination>,
@@ -209,41 +213,55 @@ fun SelaFloatingDock(
     onNavigate: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Surface(modifier = modifier.fillMaxWidth(), color = Color.White.copy(alpha = .96f),
-        shape = RoundedCornerShape(30.dp), shadowElevation = 12.dp,
-        border = BorderStroke(1.dp, Color(0xFFF3EDF8))) {
-        Row(Modifier.fillMaxWidth().padding(6.dp),
-            horizontalArrangement = Arrangement.spacedBy(2.dp), verticalAlignment = Alignment.CenterVertically) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp),
+        color = SelaPastel.surface.copy(alpha = .98f),
+        shape = RoundedCornerShape(28.dp),
+        shadowElevation = 10.dp,
+        border = BorderStroke(1.dp, SelaPastel.hairline),
+    ) {
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             destinations.forEach { destination ->
                 val active = currentRoute == destination.route
-                val background = if (active) Color(0xFFE9DFFF) else Color.Transparent
-                Box(
-                    modifier = Modifier.weight(if (active) 1.65f else 1f)
-                        .heightIn(min = 54.dp)
-                        .clip(RoundedCornerShape(23.dp))
-                        .background(background)
+                Column(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(if (active) SelaPastel.lavenderSoft else Color.Transparent)
                         .clickable(role = Role.Tab) { onNavigate(destination.route) }
-                        .semantics { selected = active },
-                    contentAlignment = Alignment.Center,
+                        .semantics { selected = active }
+                        .padding(horizontal = 10.dp, vertical = 7.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(3.dp),
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                        Icon(destination.icon, contentDescription = if (active) null else destination.label,
-                            modifier = Modifier.size(21.dp), tint = if (active) SelaPastel.lavenderDeep else SelaPastel.inkSoft)
-                        if (active) Text(destination.label, maxLines = 1,
-                            style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold,
-                            color = SelaPastel.ink)
-                    }
+                    Icon(
+                        destination.icon,
+                        contentDescription = destination.label,
+                        modifier = Modifier.size(if (active) 23.dp else 21.dp),
+                        tint = if (active) SelaPastel.lavenderDeep else SelaPastel.inkSoft,
+                    )
+                    Text(
+                        destination.label,
+                        maxLines = 1,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = if (active) FontWeight.Bold else FontWeight.Medium,
+                        color = if (active) SelaPastel.ink else SelaPastel.inkFaint,
+                    )
                 }
             }
         }
     }
 }
 
-/** Shared V2 page backdrop for planning, history, offline maps and settings. */
+/** Latar halaman V2 — gradasi pastel halus dari token [SelaPastel]. */
 fun Modifier.selaAuroraSurface(): Modifier = this.background(
     Brush.verticalGradient(
-        listOf(Color(0xFFEDEEFF), Color(0xFFF8F2FF), SelaPastel.background),
+        listOf(SelaPastel.lavenderSoft, SelaPastel.pinkSoft, SelaPastel.background),
         startY = 0f,
         endY = 1550f,
     ),

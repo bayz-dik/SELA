@@ -99,7 +99,7 @@ private fun ChatBubble(msg: ChatMsg) {
                 .padding(14.dp),
         ) {
             Text(
-                if (msg.fromUser) msg.text else "🚏 ${msg.text}",
+                msg.text,
                 style = MaterialTheme.typography.bodyMedium,
                 color = SelaPastel.ink,
             )
@@ -131,7 +131,7 @@ private fun ThinkingBubble() {
             ),
         ) {
             Text(
-                "Sela lagi mikir…",
+                "Mengetik…",
                 style = MaterialTheme.typography.bodyMedium,
                 color = SelaPastel.inkSoft,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
@@ -144,7 +144,7 @@ private fun ThinkingBubble() {
  * Layar chat kondektur SELA.
  *
  * - "Kirim": jawaban rule-based offline ([KonduktorAi]) — selalu tersedia.
- * - "🤖 Tanya Sela": jawaban AI via akun ChatGPT (OAuth). Perlu login sekali
+ * - "Tanya Sela": jawaban AI via akun ChatGPT (OAuth). Perlu login sekali
  *   dan internet. Token tersimpan terenkripsi di HP.
  *
  * @param ctx konteks opsional untuk jawaban rule-based yang lebih relevan.
@@ -155,7 +155,7 @@ fun KonduktorScreen(ctx: KonduktorCtx = KonduktorCtx()) {
     var messages by remember {
         mutableStateOf(
             listOf(
-                ChatMsg("Halo! Aku Kondektur SELA. Tanya soal bus, yuk.", fromUser = false),
+                ChatMsg("Halo, aku Kondektur SELA. Tanya soal bus.", fromUser = false),
             ),
         )
     }
@@ -167,6 +167,18 @@ fun KonduktorScreen(ctx: KonduktorCtx = KonduktorCtx()) {
     val authState by ChatGptAuth.authState.collectAsState()
     var selectedModel by remember { mutableStateOf(SelaAiClient.DEFAULT_MODEL) }
     var modelMenuOpen by remember { mutableStateOf(false) }
+    // Daftar model diambil dari akun pengguna (dinamis), fallback ke daftar statis.
+    var modelOptions by remember { mutableStateOf(SelaAiClient.MODELS) }
+    var modelsLoading by remember { mutableStateOf(false) }
+    LaunchedEffect(authState) {
+        if (authState is ChatGptAuth.AuthState.LoggedIn && !modelsLoading) {
+            modelsLoading = true
+            modelOptions = SelaAiClient.availableModels()
+            if (selectedModel !in modelOptions) {
+                selectedModel = modelOptions.firstOrNull() ?: SelaAiClient.DEFAULT_MODEL
+            }
+        }
+    }
 
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) listState.animateScrollToItem(messages.size - 1)
@@ -255,7 +267,7 @@ fun KonduktorScreen(ctx: KonduktorCtx = KonduktorCtx()) {
                     expanded = modelMenuOpen,
                     onDismissRequest = { modelMenuOpen = false },
                 ) {
-                    SelaAiClient.MODELS.forEach { model ->
+                    modelOptions.forEach { model ->
                         DropdownMenuItem(
                             text = { Text(model, color = SelaPastel.ink) },
                             onClick = {
@@ -327,7 +339,7 @@ fun KonduktorScreen(ctx: KonduktorCtx = KonduktorCtx()) {
             is ChatGptAuth.AuthState.LoggedIn -> {
                 // Tombol "Tanya Sela" — AI via ChatGPT langsung dari HP
                 SelaButton(
-                    text = if (sending) "Sela mikir..." else "🤖 Tanya Sela",
+                    text = if (sending) "Mengetik..." else "Tanya Sela",
                     onClick = ::askAi,
                     style = SelaButtonStyle.Primary,
                     enabled = !sending,
@@ -384,7 +396,7 @@ fun KonduktorScreen(ctx: KonduktorCtx = KonduktorCtx()) {
             }
             is ChatGptAuth.AuthState.LoggedOut -> {
                 SelaButton(
-                    text = "🔑 Login ChatGPT untuk AI",
+                    text = "Login ChatGPT",
                     onClick = {
                         if (!ChatGptAuth.beginLogin(context)) {
                             scope.launch {

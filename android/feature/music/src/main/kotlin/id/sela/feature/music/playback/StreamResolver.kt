@@ -21,6 +21,11 @@ import javax.inject.Singleton
  */
 @Singleton
 class StreamResolver @Inject constructor() {
+    init {
+        // Pastikan gatekeeper koneksi terbuka (lihat MusicRepository).
+        moe.rukamori.archivetune.innertube.NetworkGatekeeperControl.allowConnections()
+    }
+
     private val tag = "SelaStreamResolver"
     private val cache = mutableMapOf<String, ResolvedStream>()
     private val mutex = Mutex()

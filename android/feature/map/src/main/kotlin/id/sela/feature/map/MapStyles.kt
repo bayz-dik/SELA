@@ -1,12 +1,14 @@
 package id.sela.feature.map
 
-/** Style peta gelap OpenFreeMap — default, selaras tema Malam Kota. */
-internal const val SELA_MAP_STYLE = "https://tiles.openfreemap.org/styles/dark"
+/** Style peta terang OpenFreeMap — default, selaras tema V5 "Pagi Cerah" (pastel). */
+internal const val SELA_MAP_STYLE = "https://tiles.openfreemap.org/styles/bright"
+
+/** Style peta gelap OpenFreeMap — opsi manual (toggle), bukan default. */
+internal const val SELA_DARK_STYLE = "https://tiles.openfreemap.org/styles/dark"
 
 /**
- * B24: style terang OpenFreeMap — FALLBACK DARURAT bila style gelap gagal
- * dimuat (jaringan macet, style corrupt, dsb). Tidak dipakai saat peta sehat;
- * hanya muncul agar user tidak menatap peta hitam misterius.
+ * B24: style terang OpenFreeMap — juga dipakai sebagai fallback bila style
+ * yang diminta gagal dimuat, agar user tidak menatap peta hitam misterius.
  */
 internal const val SELA_BRIGHT_STYLE = "https://tiles.openfreemap.org/styles/bright"
 
@@ -37,9 +39,10 @@ internal const val SELA_SATELLITE_STYLE = """
 
 /**
  * B24: rantai percobaan style berlapis.
- * - Style URL vektor (gelap): [diminta, terang] — gelap dulu, terang cadangan.
+ * - Style URL vektor: [diminta, terang, gelap] — terang dulu (default V5),
+ *   gelap sebagai cadangan terakhir agar tidak pernah peta hitam misterius.
  * - JSON inline (satelit): [satelit] — tanpa fallback, langsung pesan error bila gagal.
  */
 internal fun styleFallbackChain(requested: String): List<String> =
     if (requested.trimStart().startsWith("{")) listOf(requested)
-    else (listOf(requested) + SELA_BRIGHT_STYLE).distinct()
+    else (listOf(requested) + SELA_BRIGHT_STYLE + SELA_DARK_STYLE).distinct()

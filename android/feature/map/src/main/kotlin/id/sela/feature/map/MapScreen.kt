@@ -398,7 +398,7 @@ fun MapScreen(
     var panel by rememberSaveable { mutableStateOf<String?>(null) }
     var locationBusy by remember { mutableStateOf(false) }
     var nearby by remember { mutableStateOf<GeoPoint?>(null) }
-    // B20: pilihan style peta gelap ↔ satelit — disimpan antar rotasi.
+    // B20: pilihan style peta terang ↔ satelit — disimpan antar rotasi.
     var satellite by rememberSaveable { mutableStateOf(false) }
     val mapStyle = if (satellite) SELA_SATELLITE_STYLE else SELA_MAP_STYLE
     // B21: follow mode 2D — titik biru #4285f4, snap bus ≤30m, lepas >60m.
@@ -609,7 +609,7 @@ fun MapScreen(
                 val cur = viewModel.uiState.value.camera
                 viewModel.flyTo(cur.copy(bearing = 0.0))
             },
-            // B20: toggle style peta gelap ↔ satelit.
+            // B20: toggle style peta terang ↔ satelit.
             onToggleStyle = { satellite = !satellite },
             isSatellite = satellite,
             modifier = Modifier
@@ -701,7 +701,7 @@ fun MapScreen(
                                 if (!gacorShown.value) {
                                     gacorShown.value = true
                                     PastelNoticeBanner(
-                                        text = "Mode Gacor aktif 😄 — semua ETA dibulatkan ke bawah biar berasa cepat.",
+                                        text = "Mode Gacor aktif — ETA dibulatkan ke bawah.",
                                         icon = Icons.Default.Celebration,
                                         tone = PastelNoticeTone.LIVE,
                                         modifier = Modifier.padding(horizontal = 8.dp),

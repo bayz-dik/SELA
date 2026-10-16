@@ -61,13 +61,13 @@ fun SelaHomeScreen(
             }
             item {
                 SelaHeroPanel(
-                    title = "Ke mana kita\nmelaju hari ini?",
+                    title = "Mau ke mana?",
                     subtitle = if (isLive && activeBusCount > 0) {
-                        "$activeBusCount bus sedang terpantau. Aku siap bantu cari jalan yang pas."
+                        "$activeBusCount bus terpantau."
                     } else {
-                        "Rute dan halte lokal sudah siap. Yuk, pilih tujuanmu."
+                        "Rute dan halte tersimpan di HP."
                     },
-                    cta = if (isLive) "Lihat bus live" else "Jelajahi peta",
+                    cta = if (isLive) "Lihat bus" else "Buka peta",
                     onClick = onOpenMap,
                     mascotExpression = when {
                         isLive && activeBusCount > 0 -> SelaMascotExpression.Welcome
@@ -80,35 +80,35 @@ fun SelaHomeScreen(
             item {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     SelaMetricTile(label = "Bus aktif", value = if (isLive) activeBusCount.toString() else "—",
-                        detail = if (isLive) "terpantau sekarang" else "menunggu data live",
-                        icon = Icons.Default.DirectionsBus, tint = Color(0xFFDDF2E9), onClick = onOpenMap,
+                        detail = if (isLive) "terpantau" else "belum ada data",
+                        icon = Icons.Default.DirectionsBus, tint = SelaPastel.mintSoft, onClick = onOpenMap,
                         modifier = Modifier.weight(1f))
-                    SelaMetricTile(label = "Rute kota", value = state.routes.size.toString(),
-                        detail = "rute dari data lokal", icon = Icons.Default.Route,
-                        tint = Color(0xFFFFE9CD), onClick = onPlanTrip, modifier = Modifier.weight(1f))
+                    SelaMetricTile(label = "Rute", value = state.routes.size.toString(),
+                        detail = "data lokal", icon = Icons.Default.Route,
+                        tint = SelaPastel.peachSoft, onClick = onPlanTrip, modifier = Modifier.weight(1f))
                 }
             }
             item {
-                SelaV2SectionTitle("Mau mulai dari mana?", "PILIH LANGKAH BERIKUTNYA")
+                SelaV2SectionTitle("Mulai dari sini")
             }
             item {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    SelaQuickAction("Cari rute", "Temukan jalanmu", Icons.Default.AltRoute,
-                        Color(0xFFE3DBFF), onPlanTrip, Modifier.weight(1f))
-                    SelaQuickAction("Tanya Sela", "Asisten perjalanan", Icons.Default.ChatBubbleOutline,
-                        Color(0xFFFFE1E9), onOpenAssistant, Modifier.weight(1f))
+                    SelaQuickAction("Cari rute", "Halte asal dan tujuan", Icons.Default.AltRoute,
+                        SelaPastel.lavenderSoft, onPlanTrip, Modifier.weight(1f))
+                    SelaQuickAction("Tanya Sela", "Tanya soal bus", Icons.Default.ChatBubbleOutline,
+                        SelaPastel.pinkSoft, onOpenAssistant, Modifier.weight(1f))
                 }
             }
             item {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically) {
-                    SelaV2SectionTitle("Rute tersedia", "DATA DARI PERANGKAT")
-                    TextButton(onClick = onPlanTrip) { Text("Lihat semua →", color = SelaPastel.lavenderDeep) }
+                    SelaV2SectionTitle("Rute")
+                    TextButton(onClick = onPlanTrip) { Text("Semua", color = SelaPastel.lavenderDeep) }
                 }
             }
             if (state.routes.isEmpty()) {
                 item {
-                    SelaTransitLine("↗", "Rute belum tersedia", "Coba muat ulang data rute",
+                    SelaTransitLine("↗", "Belum ada rute", "Muat ulang data",
                         onClick = onOpenMap)
                 }
             } else {
@@ -116,7 +116,7 @@ fun SelaHomeScreen(
                     SelaTransitLine(
                         badge = route.shortName.ifBlank { "BUS" },
                         title = route.longName.ifBlank { "Rute ${route.shortName}" },
-                        subtitle = "Lihat rute pada peta",
+                        subtitle = "Buka di peta",
                         onClick = { onSelectRoute(route.id) },
                     )
                 }
@@ -124,27 +124,27 @@ fun SelaHomeScreen(
             item {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically) {
-                    SelaV2SectionTitle("Kenali halte Jakarta")
-                    TextButton(onClick = onOpenMap) { Text("Peta →", color = SelaPastel.lavenderDeep) }
+                    SelaV2SectionTitle("Halte")
+                    TextButton(onClick = onOpenMap) { Text("Peta", color = SelaPastel.lavenderDeep) }
                 }
             }
             if (state.stops.isEmpty()) {
-                item { Text("Belum ada data halte lokal.", color = SelaPastel.inkSoft) }
+                item { Text("Belum ada data halte.", color = SelaPastel.inkSoft) }
             } else {
                 items(state.stops.take(2), key = { "stop-${it.id}" }) { stop ->
-                    SelaTransitLine("H", stop.name, "Lihat halte di peta",
+                    SelaTransitLine("H", stop.name, "Buka di peta",
                         onClick = { onSelectStop(stop.id) }, tint = SelaPastel.mintSoft)
                 }
             }
             if (state.data.favorites.isNotEmpty()) {
-                item { SelaV2SectionTitle("Tersimpan untukmu", "FAVORIT") }
+                item { SelaV2SectionTitle("Favorit") }
                 val favoriteRoutes = state.routes.filter { route -> state.data.favorites.any { it.kind == "route" && it.id == route.id } }
                 val favoriteStops = state.stops.filter { stop -> state.data.favorites.any { it.kind == "stop" && it.id == stop.id } }
                 items(favoriteRoutes.take(2), key = { "favorite-route-${it.id}" }) { route ->
                     SelaTransitLine(
                         badge = route.shortName.ifBlank { "BUS" },
                         title = route.longName.ifBlank { "Rute ${route.shortName}" },
-                        subtitle = "Rute favorit · buka peta",
+                        subtitle = "Buka di peta",
                         onClick = { onSelectRoute(route.id) },
                         tint = SelaPastel.lavenderSoft,
                     )
@@ -152,7 +152,7 @@ fun SelaHomeScreen(
                 items(favoriteStops.take(2), key = { "favorite-stop-${it.id}" }) { stop ->
                     SelaTransitLine(
                         badge = "H", title = stop.name,
-                        subtitle = "Halte favorit · buka peta",
+                        subtitle = "Buka di peta",
                         onClick = { onSelectStop(stop.id) },
                         tint = SelaPastel.mintSoft,
                     )
@@ -162,7 +162,7 @@ fun SelaHomeScreen(
                 TextButton(onClick = onOpenHistory, modifier = Modifier.fillMaxWidth()) {
                     Icon(Icons.Default.History, null)
                     Spacer(Modifier.width(8.dp))
-                    Text("Lihat riwayat perjalanan")
+                    Text("Riwayat")
                 }
             }
         }

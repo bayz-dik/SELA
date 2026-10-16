@@ -2,6 +2,7 @@ package id.sela.feature.music.data
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import moe.rukamori.archivetune.innertube.NetworkGatekeeperControl
 import moe.rukamori.archivetune.innertube.YouTube
 import moe.rukamori.archivetune.innertube.YouTube.SearchFilter
 import javax.inject.Inject
@@ -13,6 +14,13 @@ import javax.inject.Singleton
  */
 @Singleton
 class MusicRepository @Inject constructor() {
+
+    init {
+        // SELA memakai InnerTube langsung sebagai API client.
+        // Buka gatekeeper koneksi (default upstream: diblokir sampai verifikasi remote).
+        NetworkGatekeeperControl.allowConnections()
+    }
+
 
     suspend fun home(): Result<List<HomeSection>> = withContext(Dispatchers.IO) {
         YouTube.home().map { it.toHomeSections() }

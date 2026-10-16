@@ -114,7 +114,7 @@ fun V7AskScreen() {
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
-                    Icons.Default.Psychology,
+                    Icons.Default.Chat,
                     contentDescription = null,
                     tint = SelaV7.ink,
                     modifier = Modifier.size(26.dp),
@@ -196,7 +196,7 @@ fun V7AskScreen() {
                             contentAlignment = Alignment.Center,
                         ) {
                             Icon(
-                                Icons.Default.Psychology,
+                                Icons.Default.Chat,
                                 contentDescription = null,
                                 tint = SelaV7.ink,
                                 modifier = Modifier.size(20.dp),
@@ -268,7 +268,7 @@ private fun V7ChatBubble(message: V7ChatMessage) {
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
-                    Icons.Default.Psychology,
+                    Icons.Default.Chat,
                     contentDescription = null,
                     tint = SelaV7.ink,
                     modifier = Modifier.size(18.dp),

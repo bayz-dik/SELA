@@ -35,6 +35,12 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.*
+import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
@@ -87,6 +93,9 @@ import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
+
+/** Easing Threads: fast_out_extra_slow_in (dari reverse APK). */
+private val ThreadsEasing = CubicBezierEasing(0.05f, 0.7f, 0.1f, 1.0f)
 
 @EntryPoint
 @InstallIn(SingletonComponent::class)
@@ -335,7 +344,39 @@ private fun PastelNavItem(
             // State untuk plan yang dipilih (navigasi Cari Rute -> Detail Rute)
             var selectedPlan by remember { mutableStateOf<id.sela.model.TripPlan?>(null) }
             val startDest = "splash"
-            NavHost(nav, startDestination = startDest, modifier = Modifier.fillMaxSize().padding(padding)) {
+            NavHost(
+                nav,
+                startDestination = startDest,
+                modifier = Modifier.fillMaxSize().padding(padding),
+                enterTransition = {
+                    fadeIn(animationSpec = tween(300, easing = ThreadsEasing)) +
+                    scaleIn(
+                        initialScale = 0.85f,
+                        animationSpec = tween(300, easing = ThreadsEasing),
+                    )
+                },
+                exitTransition = {
+                    fadeOut(animationSpec = tween(300, easing = ThreadsEasing)) +
+                    scaleOut(
+                        targetScale = 1.15f,
+                        animationSpec = tween(300, easing = ThreadsEasing),
+                    )
+                },
+                popEnterTransition = {
+                    fadeIn(animationSpec = tween(300, easing = ThreadsEasing)) +
+                    scaleIn(
+                        initialScale = 0.85f,
+                        animationSpec = tween(300, easing = ThreadsEasing),
+                    )
+                },
+                popExitTransition = {
+                    fadeOut(animationSpec = tween(300, easing = ThreadsEasing)) +
+                    scaleOut(
+                        targetScale = 1.15f,
+                        animationSpec = tween(300, easing = ThreadsEasing),
+                    )
+                },
+            ) {
             composable("splash") {
                 V7SplashScreen(
                     onTimeout = {

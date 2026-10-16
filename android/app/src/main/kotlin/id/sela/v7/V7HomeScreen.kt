@@ -18,14 +18,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import id.sela.designsystem.SelaV7
-import id.sela.designsystem.components.V7Mascot
 import id.sela.feature.map.MapUiState
 import id.sela.model.ConnectionStatus
 
 /**
- * Beranda V7 — sesuai 04_HOME_ACUAN.png.
- * Header maskot + sapaan, search bar, 6 shortcut melingkar (2 baris),
- * banner eksplorasi dengan maskot.
+ * Beranda x Threads — dark mode.
+ * Header minimal, search bar, shortcut ikon monokrom, feed + divider.
+ * Sesuai Figma "SELA x Threads" 04 Beranda. Tanpa maskot, NOL shadow.
  *
  * Data bus live dari MapUiState aktual — bukan angka demo.
  */
@@ -47,43 +46,32 @@ fun V7HomeScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(SelaV7.background)
-            .padding(horizontal = 20.dp),
+            .background(SelaV7.background),
     ) {
         Spacer(Modifier.height(16.dp))
 
-        // Header: avatar maskot + sapaan + bell
+        // Header: sapaan + bell (tanpa avatar maskot)
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(CircleShape)
-                        .background(SelaV7.limeSoft),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    V7Mascot(size = 40.dp)
-                }
-                Column {
-                    Text(
-                        text = "Hai",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = SelaV7.inkSoft,
-                    )
-                    Text(
-                        text = if (userName != null) "Selamat datang, $userName!" else "Selamat datang!",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = SelaV7.ink,
-                    )
-                }
+            Column {
+                Text(
+                    text = "Hai,",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontSize = 14.sp,
+                    color = SelaV7.inkSoft,
+                )
+                Text(
+                    text = if (userName != null) "Selamat datang, $userName!" else "Selamat datang!",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 22.sp,
+                    color = SelaV7.ink,
+                )
             }
             IconButton(onClick = { /* notifikasi */ }) {
                 Icon(
@@ -96,18 +84,17 @@ fun V7HomeScreen(
 
         Spacer(Modifier.height(16.dp))
 
-        // Search bar
-        Surface(
+        // Search bar — surfaceDim, pill, tanpa shadow
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(28.dp))
-                .clickable { onSearchClick() },
-            color = SelaV7.surface,
-            shadowElevation = 2.dp,
-            shape = RoundedCornerShape(28.dp),
+                .padding(horizontal = 16.dp)
+                .clip(RoundedCornerShape(22.dp))
+                .background(SelaV7.surfaceDim)
+                .clickable { onSearchClick() }
+                .padding(horizontal = 16.dp, vertical = 12.dp),
         ) {
             Row(
-                modifier = Modifier.padding(horizontal = 18.dp, vertical = 14.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
@@ -115,10 +102,12 @@ fun V7HomeScreen(
                     Icons.Default.Search,
                     contentDescription = null,
                     tint = SelaV7.inkFaint,
+                    modifier = Modifier.size(20.dp),
                 )
                 Text(
                     text = "Mau ke mana hari ini?",
                     style = MaterialTheme.typography.bodyMedium,
+                    fontSize = 15.sp,
                     color = SelaV7.inkFaint,
                 )
             }
@@ -126,74 +115,82 @@ fun V7HomeScreen(
 
         Spacer(Modifier.height(20.dp))
 
-        // 6 shortcut melingkar — 2 baris x 3 kolom
+        // 6 shortcut — ikon monokrom dalam lingkaran surfaceDim
         val shortcuts = listOf(
-            Triple("Peta", Icons.Default.Map, SelaV7.shortcutMap) to onOpenMap,
-            Triple("Rute", Icons.Default.Route, SelaV7.shortcutRoute) to onPlanTrip,
-            Triple("Musik", Icons.Default.MusicNote, SelaV7.shortcutMusic) to onOpenMusic,
-            Triple("Tanya", Icons.Default.Chat, SelaV7.shortcutAsk) to onOpenAssistant,
-            Triple("Favorit", Icons.Default.Favorite, SelaV7.shortcutFav) to onOpenFavorites,
-            Triple("Lainnya", Icons.Default.MoreHoriz, SelaV7.shortcutMore) to onOpenOther,
+            Triple("Peta", Icons.Default.Map) to onOpenMap,
+            Triple("Rute", Icons.Default.Route) to onPlanTrip,
+            Triple("Musik", Icons.Default.MusicNote) to onOpenMusic,
+            Triple("Tanya", Icons.Default.Chat) to onOpenAssistant,
+            Triple("Favorit", Icons.Default.Favorite) to onOpenFavorites,
+            Triple("Lainnya", Icons.Default.MoreHoriz) to onOpenOther,
         )
-        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Column(
+            modifier = Modifier.padding(horizontal = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
             shortcuts.chunked(3).forEach { row ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceEvenly,
                 ) {
                     row.forEach { (info, onClick) ->
-                        val (label, icon, bg) = info
-                        V7Shortcut(label = label, icon = icon, bgColor = bg, onClick = onClick)
+                        val (label, icon) = info
+                        V7Shortcut(label = label, icon = icon, onClick = onClick)
                     }
                 }
             }
         }
 
         Spacer(Modifier.height(20.dp))
+        HorizontalDivider(thickness = 1.dp, color = SelaV7.hairline)
 
-        // Banner eksplorasi
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(20.dp),
-            color = SelaV7.limeSoft,
+        // Status live sebagai feed item (bukan banner)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Row(
-                modifier = Modifier.padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(SelaV7.surfaceDim),
+                contentAlignment = Alignment.Center,
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    V7Mascot(size = 64.dp)
-                    Text(
-                        text = "Jelajahi kota\ndengan lebih mudah",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = SelaV7.ink,
-                        lineHeight = 20.sp,
-                    )
-                }
                 Icon(
-                    Icons.Default.ArrowForward,
-                    contentDescription = "Buka peta",
+                    Icons.Default.DirectionsBus,
+                    contentDescription = null,
                     tint = SelaV7.ink,
+                    modifier = Modifier.size(22.dp),
+                )
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Bus Live",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 15.sp,
+                    color = SelaV7.ink,
+                )
+                Text(
+                    text = if (isLive) "$activeBusCount bus terpantau" else "Menghubungkan...",
+                    style = MaterialTheme.typography.bodySmall,
+                    fontSize = 13.sp,
+                    color = SelaV7.inkSoft,
+                )
+            }
+            if (isLive) {
+                Box(
                     modifier = Modifier
+                        .size(8.dp)
                         .clip(CircleShape)
-                        .clickable { onOpenMap() }
-                        .padding(8.dp),
+                        .background(SelaV7.greenOnline),
                 )
             }
         }
-
-        // Status live (data aktual)
-        Spacer(Modifier.height(12.dp))
-        Text(
-            text = if (isLive) "$activeBusCount bus terpantau live" else "Menghubungkan ke data live...",
-            style = MaterialTheme.typography.labelMedium,
-            color = SelaV7.inkFaint,
-        )
+        HorizontalDivider(thickness = 1.dp, color = SelaV7.hairline)
     }
 }
 
@@ -201,35 +198,35 @@ fun V7HomeScreen(
 private fun V7Shortcut(
     label: String,
     icon: ImageVector,
-    bgColor: Color,
     onClick: () -> Unit,
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(6.dp),
         modifier = Modifier
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(12.dp))
             .clickable { onClick() }
             .padding(8.dp),
     ) {
         Box(
             modifier = Modifier
-                .size(64.dp)
+                .size(56.dp)
                 .clip(CircleShape)
-                .background(bgColor),
+                .background(SelaV7.surfaceDim),
             contentAlignment = Alignment.Center,
         ) {
             Icon(
                 icon,
                 contentDescription = label,
                 tint = SelaV7.ink,
-                modifier = Modifier.size(28.dp),
+                modifier = Modifier.size(26.dp),
             )
         }
         Text(
             text = label,
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.Medium,
+            fontSize = 12.sp,
             color = SelaV7.ink,
         )
     }

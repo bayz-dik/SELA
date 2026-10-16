@@ -4,17 +4,17 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 
 /**
- * Tema SELA V7 — "Plopp".
+ * Tema SELA x Threads — hasil reverse engineering APK Threads v451.
  *
- * Krem hangat #FFFDF1, lime #A9F500, navy #06133E, periwinkle #91A6FF.
- * Mendukung mode gelap: [darkMode] mengganti skema Material3 sekaligus
- * palet [SelaV7] (latar/tinta/bubble) via [SelaV7.setDarkMode].
+ * Dark mode: PURE BLACK #000000 (default).
+ * Light mode: putih #FFFFFF.
+ * Aksen: biru #0095F6. Font: IGUIBetav9.
  *
- * @param darkMode true = tema gelap navy pekat dengan identitas lime tetap.
+ * @param darkMode true = tema gelap (default, sesuai desain Figma).
  */
 @Composable
 fun SelaV7Theme(
-    darkMode: Boolean = false,
+    darkMode: Boolean = true,
     content: @Composable () -> Unit,
 ) {
     // Sinkronkan palet SelaV7 — assignment volatile idempoten, aman dipanggil
@@ -22,8 +22,8 @@ fun SelaV7Theme(
     SelaV7.setDarkMode(darkMode)
     MaterialTheme(
         colorScheme = if (darkMode) SelaV7DarkScheme else SelaV7Scheme,
-        typography = SelaPastelTypography,
-        shapes = SelaPastelMaterialShapes,
+        typography = ThreadsTypography,
+        shapes = ThreadsMaterialShapes,
         content = content,
     )
 }

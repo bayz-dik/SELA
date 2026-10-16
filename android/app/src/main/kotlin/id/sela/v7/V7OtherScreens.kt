@@ -18,8 +18,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import id.sela.designsystem.SelaV7
-import id.sela.designsystem.components.V7Mascot
 
 /** Item menu generik V7. */
 data class V7MenuItem(
@@ -32,35 +32,37 @@ data class V7MenuItem(
 
 @Composable
 private fun V7MenuRow(item: V7MenuItem) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .clickable { item.onClick() }
-            .padding(horizontal = 4.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(14.dp),
-    ) {
-        Box(
+    Column {
+        Row(
             modifier = Modifier
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(item.iconBg.copy(alpha = 0.25f)),
-            contentAlignment = Alignment.Center,
+                .fillMaxWidth()
+                .clickable { item.onClick() }
+                .padding(horizontal = 4.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            Icon(item.icon, contentDescription = null, tint = SelaV7.ink, modifier = Modifier.size(22.dp))
+            Icon(
+                item.icon,
+                contentDescription = null,
+                tint = SelaV7.ink,
+                modifier = Modifier.size(24.dp),
+            )
+            Text(
+                text = item.label,
+                style = MaterialTheme.typography.bodyLarge,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Normal,
+                color = if (item.label == "Keluar") SelaV7.danger else SelaV7.ink,
+                modifier = Modifier.weight(1f),
+            )
+            item.trailing?.let {
+                Text(text = it, style = MaterialTheme.typography.bodySmall, fontSize = 14.sp, color = SelaV7.inkFaint)
+            }
+            if (item.label != "Keluar") {
+                Icon(Icons.Default.ChevronRight, contentDescription = null, tint = SelaV7.inkFaint, modifier = Modifier.size(20.dp))
+            }
         }
-        Text(
-            text = item.label,
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Medium,
-            color = SelaV7.ink,
-            modifier = Modifier.weight(1f),
-        )
-        item.trailing?.let {
-            Text(text = it, style = MaterialTheme.typography.bodySmall, color = SelaV7.inkFaint)
-        }
-        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = SelaV7.inkFaint)
+        HorizontalDivider(thickness = 1.dp, color = SelaV7.hairline, modifier = Modifier.padding(start = 42.dp))
     }
 }
 
@@ -100,13 +102,8 @@ fun V7OtherScreen(
                 )
             }
             items(items) { V7MenuRow(it) }
-            item { Spacer(Modifier.height(140.dp)) } // ruang maskot
+            item { Spacer(Modifier.height(24.dp)) }
         }
-        // Maskot mengintip dari bawah
-        V7Mascot(
-            size = 220.dp,
-            modifier = Modifier.align(Alignment.BottomCenter).offset(y = 70.dp),
-        )
     }
 }
 
@@ -190,12 +187,17 @@ fun V7ProfileScreen(
             }
             Box(
                 modifier = Modifier
-                    .size(110.dp)
+                    .size(80.dp)
                     .clip(CircleShape)
-                    .background(SelaV7.limeSoft),
+                    .background(SelaV7.surfaceDim),
                 contentAlignment = Alignment.Center,
             ) {
-                V7Mascot(size = 96.dp)
+                Icon(
+                    Icons.Default.Person,
+                    contentDescription = null,
+                    tint = SelaV7.ink,
+                    modifier = Modifier.size(44.dp),
+                )
             }
             Spacer(Modifier.height(12.dp))
             Text(
@@ -213,7 +215,7 @@ fun V7ProfileScreen(
             Surface(
                 shape = RoundedCornerShape(20.dp),
                 color = SelaV7.surface,
-                shadowElevation = 1.dp,
+                shadowElevation = 0.dp,
                 modifier = Modifier.clickable { },
             ) {
                 Row(
@@ -342,7 +344,7 @@ fun V7DrawerContent(
         Surface(
             shape = RoundedCornerShape(20.dp),
             color = SelaV7.surface,
-            shadowElevation = 1.dp,
+            shadowElevation = 0.dp,
         ) {
             Row(
                 modifier = Modifier

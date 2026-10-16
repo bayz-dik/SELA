@@ -5,20 +5,16 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
 
 /**
- * Palet SELA V7 — "Plopp".
+ * Palet SELA x Threads — hasil reverse engineering APK Threads v451.
  *
- * Mengikuti REFERENCE_CROPS/ dari paket desain V7 Bayu:
- * - Krem hangat #FFFDF1 sebagai latar utama
- * - Lime #A9F500 sebagai identitas dan aksi utama
- * - Navy #06133E untuk teks dan tombol primer
- * - Periwinkle #91A6FF untuk aksen peta/informasi
+ * Design system Barcelona (bds) + Instagram (igds):
+ * - Light: background #FFFFFF, teks #000000, divider #EFEFEF
+ * - Dark: background #000000 (pure black), teks #F5F5F5, divider #262626
+ * - Aksen: biru #0095F6
+ * - Prinsip: monokrom total, NOL shadow, hairline divider, pill button
  *
- * Menggantikan palet pastel V5 untuk redesign total V7.
- */
-/**
- * Palet V7 yang bisa ganti terang/gelap.
- * Warna identitas (lime, maskot, shortcut) sama di kedua mode;
- * warna permukaan & tinta menyesuaikan mode.
+ * Struktur init aman (pelajaran commit 6272805):
+ * palet DI DALAM object, scheme pakai by lazy — tidak ada circular static init.
  */
 @androidx.compose.runtime.Immutable
 data class SelaV7Palette(
@@ -29,8 +25,7 @@ data class SelaV7Palette(
     val inkSoft: Color,
     val inkFaint: Color,
     val hairline: Color,
-    val limeSoft: Color,
-    val periSoft: Color,
+    val accentSoft: Color,
     val dangerSoft: Color,
     val successSoft: Color,
     val warningSoft: Color,
@@ -39,48 +34,44 @@ data class SelaV7Palette(
 
 object SelaV7 {
     // Palet ditaruh DI DALAM object (bukan top-level) agar tidak ada
-    // circular static init: SelaV7 -> top-level palette -> V7ColorsKt.<clinit>
-    // -> SelaV7Scheme -> SelaV7.lime (belum init) -> NPE.
-    // Dengan ini, SelaV7.<clinit> self-contained tanpa dependensi eksternal.
+    // circular static init. SelaV7.<clinit> self-contained.
+    // Light = Threads light mode (bds/igds)
     private val lightPalette = SelaV7Palette(
-        background = Color(0xFFFFFDF1),
-        surface = Color(0xFFFFFEF8),
-        surfaceDim = Color(0xFFF5F0DC),
-        ink = Color(0xFF06133E),
-        inkSoft = Color(0xFF3D4A6B),
-        inkFaint = Color(0xFF8A93B2),
-        hairline = Color(0xFFE8E2CC),
-        limeSoft = Color(0xFFE4F9B8),
-        periSoft = Color(0xFFDFE6FF),
-        dangerSoft = Color(0xFFFBDCDC),
-        successSoft = Color(0xFFD9F2E2),
-        warningSoft = Color(0xFFFBEBD2),
-        chatIncoming = Color(0xFFF0EDDF),
+        background = Color(0xFFFFFFFF),
+        surface = Color(0xFFF5F5F5),
+        surfaceDim = Color(0xFFEFEFEF),
+        ink = Color(0xFF000000),
+        inkSoft = Color(0xFF737373),
+        inkFaint = Color(0xFFA8A8A8),
+        hairline = Color(0xFFEFEFEF),
+        accentSoft = Color(0xFFE0F1FF),
+        dangerSoft = Color(0xFFFFE5E5),
+        successSoft = Color(0xFFE5F9EC),
+        warningSoft = Color(0xFFFFF3E0),
+        chatIncoming = Color(0xFFF5F5F5),
     )
 
+    // Dark = Threads dark mode: PURE BLACK #000000
     private val darkPalette = SelaV7Palette(
-        background = Color(0xFF0A1128),
-        surface = Color(0xFF111A36),
-        surfaceDim = Color(0xFF1A2342),
-        ink = Color(0xFFF2F4FA),
-        inkSoft = Color(0xFFB9C2D8),
-        inkFaint = Color(0xFF7A86A3),
-        hairline = Color(0xFF232E52),
-        limeSoft = Color(0xFF2E3A10),
-        periSoft = Color(0xFF232B52),
-        dangerSoft = Color(0xFF4A1D1F),
-        successSoft = Color(0xFF1A3A28),
-        warningSoft = Color(0xFF4A3418),
-        chatIncoming = Color(0xFF1A2342),
+        background = Color(0xFF000000),
+        surface = Color(0xFF101010),
+        surfaceDim = Color(0xFF1A1A1A),
+        ink = Color(0xFFF5F5F5),
+        inkSoft = Color(0xFFA8A8A8),
+        inkFaint = Color(0xFF737373),
+        hairline = Color(0xFF262626),
+        accentSoft = Color(0xFF00376B),
+        dangerSoft = Color(0xFF3A1A1A),
+        successSoft = Color(0xFF1A3A24),
+        warningSoft = Color(0xFF3A2E1A),
+        chatIncoming = Color(0xFF1A1A1A),
     )
 
     /**
      * Palet aktif — diganti oleh [id.sela.designsystem.SelaV7Theme] sesuai mode.
-     * Semua properti di bawah membaca palet aktif, jadi toggle dark mode
-     * langsung tercermin di seluruh layar tanpa ubah call site.
      */
     @Volatile
-    internal var palette: SelaV7Palette = lightPalette
+    internal var palette: SelaV7Palette = darkPalette
         private set
 
     internal fun setDarkMode(dark: Boolean) {
@@ -98,89 +89,105 @@ object SelaV7 {
     val inkFaint: Color get() = palette.inkFaint
     val hairline: Color get() = palette.hairline
 
-    // Lime — identitas utama (tetap)
-    val lime = Color(0xFFA9F500)
-    val limeSoft: Color get() = palette.limeSoft
-    val limeDeep = Color(0xFF6FA800)
+    // Aksen biru Threads #0095F6 — pengganti lime sebagai warna aksi utama.
+    // Nama 'lime' dipertahankan agar call site lama tidak rusak.
+    val lime = Color(0xFF0095F6)
+    val limeSoft: Color get() = palette.accentSoft
+    val limeDeep = Color(0xFF0074CC)
 
-    // Periwinkle — aksen peta/info (tetap, kecuali soft)
-    val peri = Color(0xFF91A6FF)
-    val periSoft: Color get() = palette.periSoft
-    val periDeep = Color(0xFF4A5FC9)
+    // Biru — aksen sekunder (tetap, kecuali soft)
+    val peri = Color(0xFF0095F6)
+    val periSoft: Color get() = palette.accentSoft
+    val periDeep = Color(0xFF0074CC)
 
-    // Maskot hijau (tetap — maskot selalu lime)
-    val mascotBody = Color(0xFFA9F500)
-    val mascotBodyDark = Color(0xFF8FD600)
+    // Maskot dihapus dari desain — properti dipertahankan agar tidak rusak,
+    // tapi tidak dipakai di layar baru. Jangan pakai untuk UI baru.
+    @Deprecated("Desain Threads tidak pakai maskot", ReplaceWith("SelaV7.surfaceDim"))
+    val mascotBody = Color(0xFF262626)
+    @Deprecated("Desain Threads tidak pakai maskot", ReplaceWith("SelaV7.surfaceDim"))
+    val mascotBodyDark = Color(0xFF1A1A1A)
     val mascotEyeWhite = Color(0xFFFFFFFF)
-    val mascotPupil = Color(0xFF06133E)
+    val mascotPupil = Color(0xFF000000)
 
-    // Kartu shortcut Home (6 warna pastel cerah — tetap)
-    val shortcutMap = Color(0xFFB8F04A)
-    val shortcutRoute = Color(0xFF7FB8F0)
-    val shortcutMusic = Color(0xFFF5A8B8)
-    val shortcutAsk = Color(0xFFB8A8F0)
-    val shortcutFav = Color(0xFFFFD080)
-    val shortcutMore = Color(0xFFD8D8D8)
+    // Shortcut Home — monokrom Threads (tetap untuk kompatibilitas)
+    val shortcutMap = Color(0xFF262626)
+    val shortcutRoute = Color(0xFF262626)
+    val shortcutMusic = Color(0xFF262626)
+    val shortcutAsk = Color(0xFF262626)
+    val shortcutFav = Color(0xFF262626)
+    val shortcutMore = Color(0xFF262626)
 
     // Status (tetap, kecuali soft)
-    val danger = Color(0xFFE8696B)
+    val danger = Color(0xFFFF3B30)
     val dangerSoft: Color get() = palette.dangerSoft
-    val success = Color(0xFF43A86F)
+    val success = Color(0xFF1CD14F)
     val successSoft: Color get() = palette.successSoft
-    val warning = Color(0xFFE8A13D)
+    val warning = Color(0xFFFF9F0A)
     val warningSoft: Color get() = palette.warningSoft
 
     // Chat (incoming mengikuti mode)
     val chatIncoming: Color get() = palette.chatIncoming
-    val chatOutgoing = Color(0xFF91A6FF)
+    val chatOutgoing = Color(0xFF0095F6)
+
+    // Token tambahan Threads (bds grey scale)
+    val grey0 = Color(0xFFF5F5F5)
+    val grey1 = Color(0xFFEFEFEF)
+    val grey2 = Color(0xFFDBDBDB)
+    val grey6 = Color(0xFF737373)
+    val grey9 = Color(0xFF262626)
+    val grey10 = Color(0xFF1A1A1A)
+    val blue = Color(0xFF0095F6)
+    val blueLight = Color(0xFFE0F1FF)
+    val blueDark = Color(0xFF0074CC)
+    val greenOnline = Color(0xFF1CD14F)
 }
 
-/** Skema gelap V7 — navy pekat, lime tetap sebagai identitas.
+/** Skema gelap Threads — PURE BLACK #000000.
  * Lazy agar tidak di-init saat V7ColorsKt.<clinit> (hindari circular static init). */
 val SelaV7DarkScheme by lazy {
     darkColorScheme(
     primary = SelaV7.lime,
-    onPrimary = Color(0xFF0A1128),
-    primaryContainer = Color(0xFF3A4A12),
-    onPrimaryContainer = SelaV7.lime,
+    onPrimary = Color.White,
+    primaryContainer = Color(0xFF00376B),
+    onPrimaryContainer = Color(0xFFE0F1FF),
     secondary = SelaV7.peri,
-    onSecondary = Color(0xFF0A1128),
-    secondaryContainer = Color(0xFF2A3358),
-    onSecondaryContainer = SelaV7.peri,
+    onSecondary = Color.White,
+    secondaryContainer = Color(0xFF1A1A1A),
+    onSecondaryContainer = Color(0xFFF5F5F5),
     tertiary = SelaV7.limeDeep,
     onTertiary = Color.White,
-    background = Color(0xFF0A1128),
-    onBackground = Color(0xFFF2F4FA),
-    surface = Color(0xFF111A36),
-    onSurface = Color(0xFFF2F4FA),
-    surfaceVariant = Color(0xFF1A2342),
-    onSurfaceVariant = Color(0xFFB9C2D8),
-    surfaceTint = SelaV7.lime,
-    outline = Color(0xFF232E52),
-    outlineVariant = Color(0xFF1A2342),
+    background = Color(0xFF000000),
+    onBackground = Color(0xFFF5F5F5),
+    surface = Color(0xFF101010),
+    onSurface = Color(0xFFF5F5F5),
+    surfaceVariant = Color(0xFF1A1A1A),
+    onSurfaceVariant = Color(0xFFA8A8A8),
+    surfaceTint = Color(0xFF0095F6),
+    outline = Color(0xFF262626),
+    outlineVariant = Color(0xFF1A1A1A),
     error = SelaV7.danger,
     onError = Color.White,
-    errorContainer = Color(0xFF4A1D1F),
+    errorContainer = Color(0xFF3A1A1A),
     onErrorContainer = Color(0xFFFFB4B4),
-    inverseSurface = Color(0xFFFFFDF1),
-    inverseOnSurface = Color(0xFF06133E),
+    inverseSurface = Color(0xFFF5F5F5),
+    inverseOnSurface = Color(0xFF000000),
     inversePrimary = SelaV7.limeDeep,
     scrim = Color.Black,
     )
 }
 
-/** Skema terang V7 — satu-satunya tema redesign.
+/** Skema terang Threads — putih #FFFFFF.
  * Lazy agar tidak di-init saat V7ColorsKt.<clinit> (hindari circular static init). */
 val SelaV7Scheme by lazy {
     lightColorScheme(
     primary = SelaV7.lime,
-    onPrimary = SelaV7.ink,
-    primaryContainer = SelaV7.limeSoft,
-    onPrimaryContainer = SelaV7.ink,
+    onPrimary = Color.White,
+    primaryContainer = Color(0xFFE0F1FF),
+    onPrimaryContainer = Color(0xFF00376B),
     secondary = SelaV7.peri,
     onSecondary = Color.White,
-    secondaryContainer = SelaV7.periSoft,
-    onSecondaryContainer = SelaV7.ink,
+    secondaryContainer = Color(0xFFF5F5F5),
+    onSecondaryContainer = Color(0xFF000000),
     tertiary = SelaV7.limeDeep,
     onTertiary = Color.White,
     background = SelaV7.background,
@@ -191,7 +198,7 @@ val SelaV7Scheme by lazy {
     onSurfaceVariant = SelaV7.inkSoft,
     surfaceTint = SelaV7.lime,
     outline = SelaV7.hairline,
-    outlineVariant = Color(0xFFF0EAD2),
+    outlineVariant = Color(0xFFF5F5F5),
     error = SelaV7.danger,
     onError = Color.White,
     errorContainer = SelaV7.dangerSoft,

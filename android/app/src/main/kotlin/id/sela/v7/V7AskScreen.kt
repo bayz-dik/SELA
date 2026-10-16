@@ -20,7 +20,6 @@ import id.sela.assistant.ChatGptAuth
 import id.sela.assistant.KonduktorAi
 import id.sela.assistant.SelaAiClient
 import id.sela.designsystem.SelaV7
-import id.sela.designsystem.components.V7Mascot
 import kotlinx.coroutines.launch
 
 /** Satu pesan chat. */
@@ -111,10 +110,15 @@ fun V7AskScreen() {
                 modifier = Modifier
                     .size(48.dp)
                     .clip(CircleShape)
-                    .background(SelaV7.periSoft),
+                    .background(SelaV7.surfaceDim),
                 contentAlignment = Alignment.Center,
             ) {
-                V7Mascot(size = 40.dp)
+                Icon(
+                    Icons.Default.SmartToy,
+                    contentDescription = null,
+                    tint = SelaV7.ink,
+                    modifier = Modifier.size(26.dp),
+                )
             }
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -184,7 +188,21 @@ fun V7AskScreen() {
                         horizontalArrangement = Arrangement.Start,
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        V7Mascot(size = 36.dp, modifier = Modifier.padding(end = 6.dp))
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(SelaV7.surfaceDim),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                Icons.Default.SmartToy,
+                                contentDescription = null,
+                                tint = SelaV7.ink,
+                                modifier = Modifier.size(20.dp),
+                            )
+                        }
+                        Spacer(Modifier.width(6.dp))
                         CircularProgressIndicator(
                             modifier = Modifier.size(24.dp),
                             color = SelaV7.limeDeep,
@@ -242,7 +260,21 @@ private fun V7ChatBubble(message: V7ChatMessage) {
         verticalAlignment = Alignment.Bottom,
     ) {
         if (!message.fromUser) {
-            V7Mascot(size = 36.dp, modifier = Modifier.padding(end = 6.dp))
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .clip(CircleShape)
+                    .background(SelaV7.surfaceDim),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    Icons.Default.SmartToy,
+                    contentDescription = null,
+                    tint = SelaV7.ink,
+                    modifier = Modifier.size(18.dp),
+                )
+            }
+            Spacer(Modifier.width(6.dp))
         }
         Surface(
             shape = RoundedCornerShape(

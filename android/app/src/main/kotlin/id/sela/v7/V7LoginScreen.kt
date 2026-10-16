@@ -1,6 +1,5 @@
 package id.sela.v7
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -9,7 +8,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -18,12 +16,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import id.sela.R
 import id.sela.designsystem.SelaV7
-import id.sela.designsystem.components.V7Mascot
 
 /**
- * Login V7 — sesuai 02_LOGIN_ACUAN.png.
- * Headline + deskripsi, tombol Google navy, tombol outline "Sudah punya akun? Masuk",
- * maskot mengintip dari bawah (dinaikkan, tidak tenggelam).
+ * Login x Threads — dark mode.
+ * Tombol pill PUTIH teks HITAM (primary), link biru (sekunder).
+ * Sesuai Figma "SELA x Threads" 02 Login. Tanpa maskot/dekorasi.
  */
 @Composable
 fun V7LoginScreen(
@@ -37,91 +34,85 @@ fun V7LoginScreen(
             .background(SelaV7.background)
             .windowInsetsPadding(WindowInsets.navigationBars),
     ) {
-        // Dekorasi: lingkaran lime kiri atas
-        Canvas(
-            modifier = Modifier.size(180.dp).align(Alignment.TopStart).offset((-50).dp, (-30).dp)
-        ) {
-            drawCircle(color = SelaV7.lime, radius = size.minDimension / 2)
-        }
-        // Lingkaran periwinkle kanan
-        Canvas(
-            modifier = Modifier.size(110.dp).align(Alignment.TopEnd).offset(30.dp, 80.dp)
-        ) {
-            drawCircle(color = SelaV7.peri, radius = size.minDimension / 2)
-        }
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 28.dp)
-                .padding(top = 120.dp),
-            horizontalAlignment = Alignment.Start,
+                .padding(horizontal = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
+            Spacer(Modifier.height(120.dp))
             Text(
-                text = "Yuk, mulai\nperjalananmu!",
-                style = MaterialTheme.typography.headlineLarge,
-                fontWeight = FontWeight.Black,
+                text = "SELA",
+                style = MaterialTheme.typography.displayMedium,
+                fontWeight = FontWeight.Bold,
                 fontSize = 32.sp,
-                lineHeight = 38.sp,
                 color = SelaV7.ink,
+                textAlign = TextAlign.Center,
             )
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(8.dp))
             Text(
-                text = "Cari rute, pantau bus, dan temukan perjalanan yang lebih mudah.",
+                text = "Teman perjalanan setiap hari",
                 style = MaterialTheme.typography.bodyMedium,
+                fontSize = 15.sp,
                 color = SelaV7.inkSoft,
+                textAlign = TextAlign.Center,
             )
-            Spacer(Modifier.height(28.dp))
+            Spacer(Modifier.height(48.dp))
 
-            // Tombol Google navy
+            // Tombol Google — pill PUTIH teks HITAM (ala Threads)
             Button(
                 onClick = onGoogleSignIn,
                 enabled = !isLoading,
-                modifier = Modifier.fillMaxWidth().height(56.dp),
-                shape = RoundedCornerShape(28.dp),
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+                shape = RoundedCornerShape(percent = 50),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = SelaV7.ink,
-                    contentColor = Color.White,
+                    containerColor = Color.White,
+                    contentColor = Color.Black,
+                    disabledContainerColor = SelaV7.surfaceDim,
+                    disabledContentColor = SelaV7.inkFaint,
                 ),
             ) {
                 if (isLoading) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(22.dp),
-                        color = Color.White,
+                        color = Color.Black,
                         strokeWidth = 2.dp,
                     )
                 } else {
-                    // Logo Google resmi (vector multi-warna)
                     Image(
                         painter = painterResource(id = R.drawable.ic_google_g),
                         contentDescription = "Logo Google",
-                        modifier = Modifier
-                            .size(22.dp)
-                            .padding(end = 2.dp),
+                        modifier = Modifier.size(20.dp),
                     )
-                    Spacer(Modifier.width(8.dp))
+                    Spacer(Modifier.width(10.dp))
                     Text(
-                        text = "Mulai dengan Google",
-                        fontWeight = FontWeight.SemiBold,
+                        text = "Lanjut dengan Google",
+                        fontWeight = FontWeight.Bold,
                         fontSize = 16.sp,
                     )
                 }
             }
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(16.dp))
 
-            // Tombol outline
-            OutlinedButton(
+            Text(
+                text = "atau",
+                style = MaterialTheme.typography.bodySmall,
+                fontSize = 14.sp,
+                color = SelaV7.inkFaint,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(Modifier.height(16.dp))
+
+            // Tombol sekunder — teks biru borderless (ala Threads)
+            TextButton(
                 onClick = onGoogleSignIn,
                 enabled = !isLoading,
-                modifier = Modifier.fillMaxWidth().height(56.dp),
-                shape = RoundedCornerShape(28.dp),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = SelaV7.limeDeep),
-                border = androidx.compose.foundation.BorderStroke(1.5.dp, SelaV7.lime),
             ) {
                 Text(
-                    text = "Sudah punya akun? Masuk",
+                    text = "Masuk dengan Email",
                     fontWeight = FontWeight.SemiBold,
-                    fontSize = 15.sp,
+                    fontSize = 16.sp,
+                    color = SelaV7.blue,
                 )
             }
 
@@ -135,14 +126,31 @@ fun V7LoginScreen(
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
-        }
 
-        // Maskot mengintip dari bawah — dinaikkan 4-8% viewport
-        V7Mascot(
-            size = 300.dp,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .offset(y = 90.dp), // hanya mata + jambul terlihat, tidak tenggelam
-        )
+            Spacer(Modifier.weight(1f))
+            Row(
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "Belum punya akun? ",
+                    style = MaterialTheme.typography.bodySmall,
+                    fontSize = 14.sp,
+                    color = SelaV7.inkFaint,
+                )
+                TextButton(
+                    onClick = onGoogleSignIn,
+                    contentPadding = PaddingValues(0.dp),
+                ) {
+                    Text(
+                        text = "Daftar",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp,
+                        color = SelaV7.ink,
+                    )
+                }
+            }
+            Spacer(Modifier.height(32.dp))
+        }
     }
 }

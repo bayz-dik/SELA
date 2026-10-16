@@ -21,7 +21,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import id.sela.designsystem.SelaV7
-import id.sela.designsystem.components.V7Mascot
 import id.sela.feature.music.ui.MusicViewModel
 
 /**
@@ -125,7 +124,20 @@ fun V7MusicScreen(
                             )
                         }
                     }
-                    V7Mascot(size = 120.dp, withHeadphones = true)
+                    Box(
+                        modifier = Modifier
+                            .size(120.dp)
+                            .clip(CircleShape)
+                            .background(SelaV7.surfaceDim),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            Icons.Default.MusicNote,
+                            contentDescription = null,
+                            tint = SelaV7.ink,
+                            modifier = Modifier.size(56.dp),
+                        )
+                    }
                 }
             }
             Spacer(Modifier.height(20.dp))

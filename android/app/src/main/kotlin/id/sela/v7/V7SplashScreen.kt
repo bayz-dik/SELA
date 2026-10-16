@@ -9,58 +9,48 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import id.sela.designsystem.SelaV7
-import id.sela.designsystem.components.V7Mascot
 import kotlinx.coroutines.delay
 
 /**
- * Splash V7 — sesuai 01_SPLASH_ACUAN.png.
- * Logo SELA di tengah, lingkaran lime besar pojok kiri, maskot muncul dari bawah.
+ * Splash x Threads — dark mode minimal.
+ * Background pure black, wordmark "SELA" putih di tengah.
+ * Sesuai Figma "SELA x Threads" 01 Splash.
  */
 @Composable
 fun V7SplashScreen(
     onTimeout: () -> Unit,
 ) {
     LaunchedEffect(Unit) {
-        delay(1800)
+        delay(1500)
         onTimeout()
     }
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(SelaV7.background),
+        contentAlignment = Alignment.Center,
     ) {
-        // Lingkaran dekoratif lime pojok kiri atas
-        androidx.compose.foundation.Canvas(
-            modifier = Modifier.size(220.dp).align(Alignment.TopStart).offset((-60).dp, (-40).dp)
-        ) {
-            drawCircle(color = SelaV7.lime, radius = size.minDimension / 2)
-        }
-        // Lingkaran periwinkle kanan
-        androidx.compose.foundation.Canvas(
-            modifier = Modifier.size(140.dp).align(Alignment.TopEnd).offset(40.dp, 60.dp)
-        ) {
-            drawCircle(color = SelaV7.peri, radius = size.minDimension / 2)
-        }
-
-        // Logo tengah
         Text(
             text = "SELA",
             style = MaterialTheme.typography.displayLarge,
-            fontWeight = FontWeight.Black,
-            fontSize = 56.sp,
+            fontWeight = FontWeight.Bold,
+            fontSize = 40.sp,
             color = SelaV7.ink,
-            modifier = Modifier.align(Alignment.Center),
+            textAlign = TextAlign.Center,
         )
-
-        // Maskot dari bawah
-        V7Mascot(
-            size = 280.dp,
+        Text(
+            text = "dari Bayu",
+            style = MaterialTheme.typography.bodySmall,
+            fontSize = 13.sp,
+            color = SelaV7.inkFaint,
+            textAlign = TextAlign.Center,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .offset(y = 60.dp),
+                .padding(bottom = 48.dp),
         )
     }
 }

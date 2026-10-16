@@ -67,7 +67,7 @@ fun V7RouteSearchScreen(
                 .padding(horizontal = 20.dp),
             shape = RoundedCornerShape(20.dp),
             color = SelaV7.surface,
-            shadowElevation = 2.dp,
+            shadowElevation = 0.dp,
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 V7StopField(
@@ -314,7 +314,7 @@ private fun V7RouteCard(plan: TripPlan, onClick: () -> Unit) {
             .clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
         color = SelaV7.surface,
-        shadowElevation = 1.dp,
+        shadowElevation = 0.dp,
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -394,7 +394,7 @@ fun V7RouteDetailScreen(
                 .weight(0.65f),
             shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
             color = SelaV7.surface,
-            shadowElevation = 8.dp,
+            shadowElevation = 0.dp,
         ) {
             Column(modifier = Modifier.padding(20.dp)) {
                 Text(

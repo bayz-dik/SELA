@@ -1,4 +1,4 @@
-package id.sela.v7
+package id.sela.feature.map
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable

@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import id.sela.designsystem.SelaV7
+import id.sela.feature.map.V7RouteMiniMap
 import id.sela.feature.settings.TripPlannerViewModel
 import id.sela.model.TripPlan
 

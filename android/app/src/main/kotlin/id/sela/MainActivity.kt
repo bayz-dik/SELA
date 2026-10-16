@@ -153,6 +153,11 @@ interface ThemePrefsEntryPoint {
                             )
                         },
                     ),
+                    darkMode = darkMode,
+                    onDarkModeChange = { enabled ->
+                        darkMode = enabled
+                        selaPrefs.edit().putBoolean("v7_dark_mode", enabled).apply()
+                    },
                 )
             }
         }
@@ -221,6 +226,8 @@ private fun PastelNavItem(
 @Composable fun SelaScaffold(
     show3dBuildings: Boolean = false,
     stopExtras: StopSheetExtras = StopSheetExtras(),
+    darkMode: Boolean = false,
+    onDarkModeChange: (Boolean) -> Unit = {},
 ) {
     val nav = rememberNavController()
     val map: MapViewModel = hiltViewModel()
@@ -272,10 +279,7 @@ private fun PastelNavItem(
                 },
                 onClose = { scope.launch { drawerState.close() } },
                 darkMode = darkMode,
-                onDarkModeChange = { enabled ->
-                    darkMode = enabled
-                    selaPrefs.edit().putBoolean("v7_dark_mode", enabled).apply()
-                },
+                onDarkModeChange = onDarkModeChange,
             )
         },
     ) {

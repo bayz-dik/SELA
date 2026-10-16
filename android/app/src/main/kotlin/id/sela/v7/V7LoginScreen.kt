@@ -1,6 +1,7 @@
 package id.sela.v7
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -10,10 +11,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import id.sela.R
 import id.sela.designsystem.SelaV7
 import id.sela.designsystem.components.V7Mascot
 
@@ -88,14 +91,15 @@ fun V7LoginScreen(
                         strokeWidth = 2.dp,
                     )
                 } else {
-                    // Logo G sederhana
-                    Text(
-                        text = "G",
-                        fontWeight = FontWeight.Black,
-                        fontSize = 20.sp,
-                        color = Color.White,
-                        modifier = Modifier.padding(end = 10.dp),
+                    // Logo Google resmi (vector multi-warna)
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_google_g),
+                        contentDescription = "Logo Google",
+                        modifier = Modifier
+                            .size(22.dp)
+                            .padding(end = 2.dp),
                     )
+                    Spacer(Modifier.width(8.dp))
                     Text(
                         text = "Mulai dengan Google",
                         fontWeight = FontWeight.SemiBold,

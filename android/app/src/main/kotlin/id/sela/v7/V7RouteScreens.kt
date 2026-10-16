@@ -33,6 +33,8 @@ fun V7RouteSearchScreen(
     viewModel: TripPlannerViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    // Dialog picker halte: null = tutup, "origin"/"dest" = pilih asal/tujuan
+    var pickerFor by remember { mutableStateOf<String?>(null) }
 
     Column(
         modifier = Modifier
@@ -49,9 +51,15 @@ fun V7RouteSearchScreen(
             IconButton(onClick = onBack) {
                 Icon(Icons.Default.ArrowBack, contentDescription = "Kembali", tint = SelaV7.ink)
             }
+            Text(
+                text = "Cari Rute",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = SelaV7.ink,
+            )
         }
 
-        // Form Dari/Ke
+        // Form Dari/Ke — bisa diketik & dipilih dari 8091 halte GTFS
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
@@ -63,16 +71,44 @@ fun V7RouteSearchScreen(
             Column(modifier = Modifier.padding(16.dp)) {
                 V7StopField(
                     label = "Dari",
-                    value = state.stops.find { it.id == state.originId }?.name ?: "Blok M",
-                    onClick = { /* pilih halte asal */ },
+                    value = state.stops.find { it.id == state.originId }?.name,
+                    placeholder = "Pilih halte asal",
+                    onClick = { pickerFor = "origin" },
                 )
                 Divider(color = SelaV7.hairline, modifier = Modifier.padding(vertical = 8.dp))
                 V7StopField(
                     label = "Ke",
-                    value = state.stops.find { it.id == state.destId }?.name ?: "Kota Tua",
-                    onClick = { /* pilih halte tujuan */ },
+                    value = state.stops.find { it.id == state.destId }?.name,
+                    placeholder = "Pilih halte tujuan",
+                    onClick = { pickerFor = "dest" },
                 )
             }
+        }
+
+        // Tombol tukar
+        if (state.originId != null || state.destId != null) {
+            TextButton(
+                onClick = { viewModel.swap() },
+                modifier = Modifier.align(Alignment.End).padding(end = 20.dp),
+            ) {
+                Icon(Icons.Default.SwapVert, contentDescription = null, tint = SelaV7.limeDeep)
+                Spacer(Modifier.width(4.dp))
+                Text("Tukar", color = SelaV7.limeDeep, fontWeight = FontWeight.SemiBold)
+            }
+        }
+
+        // Dialog picker halte
+        pickerFor?.let { which ->
+            V7StopPickerDialog(
+                title = if (which == "origin") "Halte asal" else "Halte tujuan",
+                stops = state.stops,
+                onDismiss = { pickerFor = null },
+                onSelect = { stop ->
+                    if (which == "origin") viewModel.setOrigin(stop.id)
+                    else viewModel.setDest(stop.id)
+                    pickerFor = null
+                },
+            )
         }
 
         Spacer(Modifier.height(16.dp))
@@ -141,7 +177,12 @@ fun V7RouteSearchScreen(
 }
 
 @Composable
-private fun V7StopField(label: String, value: String, onClick: () -> Unit) {
+private fun V7StopField(
+    label: String,
+    value: String?,
+    placeholder: String,
+    onClick: () -> Unit,
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -154,22 +195,110 @@ private fun V7StopField(label: String, value: String, onClick: () -> Unit) {
         Icon(
             if (label == "Dari") Icons.Default.TripOrigin else Icons.Default.Place,
             contentDescription = null,
-            tint = SelaV7.inkFaint,
+            tint = if (value != null) SelaV7.limeDeep else SelaV7.inkFaint,
         )
-        Column {
+        Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelSmall,
                 color = SelaV7.inkFaint,
             )
             Text(
-                text = value,
+                text = value ?: placeholder,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
-                color = SelaV7.ink,
+                color = if (value != null) SelaV7.ink else SelaV7.inkFaint,
             )
         }
+        Icon(
+            Icons.Default.ChevronRight,
+            contentDescription = "Pilih",
+            tint = SelaV7.inkFaint,
+        )
     }
+}
+
+/**
+ * Dialog picker halte — cari dari ribuan halte GTFS, pilih satu.
+ */
+@Composable
+private fun V7StopPickerDialog(
+    title: String,
+    stops: List<id.sela.model.Stop>,
+    onDismiss: () -> Unit,
+    onSelect: (id.sela.model.Stop) -> Unit,
+) {
+    var query by remember { mutableStateOf("") }
+    val suggestions = remember(query, stops) {
+        if (query.isBlank()) stops.take(50)
+        else stops.filter { it.name.contains(query, ignoreCase = true) }.take(50)
+    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {},
+        title = {
+            Text(title, fontWeight = FontWeight.Bold, color = SelaV7.ink)
+        },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                OutlinedTextField(
+                    value = query,
+                    onValueChange = { query = it },
+                    placeholder = { Text("Ketik nama halte...", color = SelaV7.inkFaint) },
+                    leadingIcon = {
+                        Icon(Icons.Default.Search, contentDescription = null, tint = SelaV7.inkFaint)
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = SelaV7.limeDeep,
+                        unfocusedBorderColor = SelaV7.hairline,
+                    ),
+                )
+                Text(
+                    text = "${stops.size} halte tersedia",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = SelaV7.inkFaint,
+                )
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 320.dp),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    items(suggestions, key = { it.id }) { stop ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable { onSelect(stop) }
+                                .padding(horizontal = 12.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            Icon(
+                                Icons.Default.DirectionsBus,
+                                contentDescription = null,
+                                tint = SelaV7.limeDeep,
+                                modifier = Modifier.size(20.dp),
+                            )
+                            Text(
+                                text = stop.name,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = SelaV7.ink,
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        containerColor = SelaV7.surface,
+        shape = RoundedCornerShape(24.dp),
+    )
 }
 
 @Composable
@@ -235,13 +364,17 @@ fun V7RouteDetailScreen(
             .fillMaxSize()
             .background(SelaV7.background),
     ) {
-        // Area peta (diisi MapLibre mini oleh caller atau placeholder)
+        // Area peta: mini MapLibre dengan polyline rute aktual
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(0.35f)
                 .background(SelaV7.periSoft),
         ) {
+            V7RouteMiniMap(
+                plan = plan,
+                modifier = Modifier.fillMaxSize(),
+            )
             IconButton(
                 onClick = onBack,
                 modifier = Modifier
@@ -251,7 +384,6 @@ fun V7RouteDetailScreen(
             ) {
                 Icon(Icons.Default.ArrowBack, contentDescription = "Kembali", tint = SelaV7.ink)
             }
-            // TODO: MapLibre mini map dengan polyline rute
         }
 
         // Timeline di bawah

@@ -60,7 +60,6 @@ import id.sela.v7.V7RouteSearchScreen
 import id.sela.v7.V7RouteDetailScreen
 import id.sela.v7.V7MusicScreen
 import id.sela.v7.V7AskScreen
-import id.sela.v7.V7ChatMessage
 import id.sela.v7.V7OtherScreen
 import id.sela.v7.V7SettingsScreen
 import id.sela.v7.V7ProfileScreen
@@ -127,8 +126,15 @@ interface ThemePrefsEntryPoint {
             val map3d by prefs.map3dEnabled.collectAsState(initial = false)
             val touristMode by prefs.touristMode.collectAsState(initial = false)
             val context = LocalContext.current
-            // Tema V7 "Plopp" — satu-satunya tema redesign.
-            SelaV7Theme {
+            // V7: Mode gelap — disimpan di sela_prefs, toggle dari drawer.
+            val selaPrefs = remember(context) {
+                context.getSharedPreferences("sela_prefs", MODE_PRIVATE)
+            }
+            var darkMode by remember {
+                mutableStateOf(selaPrefs.getBoolean("v7_dark_mode", false))
+            }
+            // Tema V7 "Plopp" — terang/gelap.
+            SelaV7Theme(darkMode = darkMode) {
                 SelaScaffold(
                     show3dBuildings = map3d,
                     stopExtras = StopSheetExtras(
@@ -265,6 +271,11 @@ private fun PastelNavItem(
                     }
                 },
                 onClose = { scope.launch { drawerState.close() } },
+                darkMode = darkMode,
+                onDarkModeChange = { enabled ->
+                    darkMode = enabled
+                    selaPrefs.edit().putBoolean("v7_dark_mode", enabled).apply()
+                },
             )
         },
     ) {
@@ -309,10 +320,6 @@ private fun PastelNavItem(
             val authState by authViewModel.uiState.collectAsStateWithLifecycle()
             // State untuk plan yang dipilih (navigasi Cari Rute -> Detail Rute)
             var selectedPlan by remember { mutableStateOf<id.sela.model.TripPlan?>(null) }
-            // State chat Tanya SELA
-            var chatMessages by remember {
-                mutableStateOf(listOf(V7ChatMessage("Halo! Ada yang bisa saya bantu?", false)))
-            }
             val startDest = "splash"
             NavHost(nav, startDestination = startDest, modifier = Modifier.fillMaxSize().padding(padding)) {
             composable("splash") {
@@ -443,17 +450,9 @@ private fun PastelNavItem(
                 }
             }
             composable("konduktor") {
-                V7AskScreen(
-                    messages = chatMessages,
-                    onSend = { text ->
-                        chatMessages = chatMessages + V7ChatMessage(text, true)
-                        // TODO: hubungkan ke SelaAiLogic untuk jawaban AI
-                        chatMessages = chatMessages + V7ChatMessage(
-                            "Maaf, AI belum terhubung. Coba lagi nanti.",
-                            false,
-                        )
-                    },
-                )
+                // V7: Tanya SELA mandiri — terhubung ke SelaAiClient (ChatGPT)
+                // dengan fallback offline yang jujur.
+                V7AskScreen()
             }
             composable("music") { V7MusicScreen() }
             composable("sos") { SosScreen() }

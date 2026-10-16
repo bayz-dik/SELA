@@ -173,8 +173,9 @@ private fun FilterGlassPill(
             shape = SelaPastelShapes.pill,
         ),
         shape = SelaPastelShapes.pill,
-        color = if (selected) Color.White.copy(alpha = 0.94f) else Color.White.copy(alpha = 0.55f),
-        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.75f)),
+        // V7: chip aktif = lime (sesuai 05_PETA_ACUAN.png), nonaktif = putih kaca
+        color = if (selected) SelaV7.lime else Color.White.copy(alpha = 0.88f),
+        border = if (selected) null else BorderStroke(1.dp, Color.White.copy(alpha = 0.75f)),
     ) {
         Row(
             Modifier.padding(horizontal = 18.dp, vertical = 12.dp),
@@ -187,7 +188,8 @@ private fun FilterGlassPill(
             Text(
                 text,
                 style = MaterialTheme.typography.labelLarge,
-                color = if (selected) SelaV7.ink else SelaV7.inkSoft,
+                color = SelaV7.ink,
+                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )

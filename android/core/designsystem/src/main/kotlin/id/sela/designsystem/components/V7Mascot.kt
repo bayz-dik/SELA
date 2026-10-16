@@ -86,28 +86,28 @@ private fun DrawScope.drawMascotBody(w: Float, h: Float) {
     val bodyColor = SelaV7.mascotBody
     val bodyDark = SelaV7.mascotBodyDark
 
-    // Badan utama: oval membulat
+    // Badan utama: oval membulat (proporsi referensi: lebar, pipi penuh)
     drawOval(
         color = bodyColor,
-        topLeft = Offset(w * 0.08f, h * 0.18f),
-        size = Size(w * 0.84f, h * 0.82f),
+        topLeft = Offset(w * 0.06f, h * 0.20f),
+        size = Size(w * 0.88f, h * 0.80f),
     )
-    // Jambul: dua tonjolan di atas
+    // Jambul: dua tonjolan kecil berdekatan di tengah atas (sesuai referensi)
     drawCircle(
         color = bodyColor,
-        radius = w * 0.13f,
-        center = Offset(w * 0.38f, h * 0.16f),
+        radius = w * 0.085f,
+        center = Offset(w * 0.45f, h * 0.185f),
     )
     drawCircle(
         color = bodyColor,
-        radius = w * 0.10f,
-        center = Offset(w * 0.58f, h * 0.13f),
+        radius = w * 0.07f,
+        center = Offset(w * 0.56f, h * 0.175f),
     )
     // Bayangan bawah halus
     drawOval(
-        color = bodyDark.copy(alpha = 0.35f),
-        topLeft = Offset(w * 0.18f, h * 0.78f),
-        size = Size(w * 0.64f, h * 0.20f),
+        color = bodyDark.copy(alpha = 0.30f),
+        topLeft = Offset(w * 0.16f, h * 0.80f),
+        size = Size(w * 0.68f, h * 0.18f),
     )
 }
 
@@ -117,15 +117,16 @@ private fun DrawScope.drawMascotEyes(
     blinkProgress: Float,
     glanceX: Float,
 ) {
+    // Mata BESAR sesuai referensi: oval putih raksasa, pupil navy besar di tengah-bawah
     val eyeY = h * 0.52f
-    val eyeRadiusX = w * 0.20f
-    val eyeRadiusY = h * 0.20f * (1f - blinkProgress * 0.92f)
+    val eyeRadiusX = w * 0.235f
+    val eyeRadiusY = h * 0.235f * (1f - blinkProgress * 0.92f)
     if (eyeRadiusY < h * 0.015f) return // mata tertutup penuh
 
-    val leftEyeX = w * 0.32f
-    val rightEyeX = w * 0.68f
+    val leftEyeX = w * 0.30f
+    val rightEyeX = w * 0.70f
 
-    // Putih mata
+    // Putih mata — oval besar
     drawOval(
         color = SelaV7.mascotEyeWhite,
         topLeft = Offset(leftEyeX - eyeRadiusX, eyeY - eyeRadiusY),
@@ -139,10 +140,10 @@ private fun DrawScope.drawMascotEyes(
 
     if (blinkProgress > 0.5f) return // pupil hilang saat kedip
 
-    // Pupil navy dengan lirikan
-    val pupilR = w * 0.095f
-    val glanceOffset = glanceX * w * 0.05f
-    val pupilY = eyeY + h * 0.02f
+    // Pupil navy besar dengan lirikan
+    val pupilR = w * 0.115f
+    val glanceOffset = glanceX * w * 0.06f
+    val pupilY = eyeY + h * 0.035f
 
     drawCircle(
         color = SelaV7.mascotPupil,
@@ -154,32 +155,52 @@ private fun DrawScope.drawMascotEyes(
         radius = pupilR,
         center = Offset(rightEyeX + glanceOffset, pupilY),
     )
-    // Highlight putih
-    val hlR = w * 0.032f
+    // Highlight putih (khas referensi: titik terang di pupil)
+    val hlR = w * 0.030f
     drawCircle(
         color = Color.White,
         radius = hlR,
-        center = Offset(leftEyeX + glanceOffset - pupilR * 0.3f, pupilY - pupilR * 0.35f),
+        center = Offset(leftEyeX + glanceOffset - pupilR * 0.28f, pupilY - pupilR * 0.32f),
     )
     drawCircle(
         color = Color.White,
         radius = hlR,
-        center = Offset(rightEyeX + glanceOffset - pupilR * 0.3f, pupilY - pupilR * 0.35f),
+        center = Offset(rightEyeX + glanceOffset - pupilR * 0.28f, pupilY - pupilR * 0.32f),
     )
 
-    // Alis
-    val browY = eyeY - eyeRadiusY - h * 0.06f
-    drawLine(
+    // Alis melengkung (arc kecil di atas tiap mata, sesuai referensi)
+    val browY = eyeY - eyeRadiusY - h * 0.045f
+    drawArc(
         color = SelaV7.mascotPupil,
-        start = Offset(leftEyeX - w * 0.09f, browY),
-        end = Offset(leftEyeX + w * 0.09f, browY - h * 0.015f),
-        strokeWidth = w * 0.028f,
+        startAngle = 200f,
+        sweepAngle = 140f,
+        useCenter = false,
+        topLeft = Offset(leftEyeX - w * 0.075f, browY - h * 0.02f),
+        size = Size(w * 0.15f, h * 0.05f),
+        style = androidx.compose.ui.graphics.drawscope.Stroke(width = w * 0.026f),
     )
-    drawLine(
+    drawArc(
         color = SelaV7.mascotPupil,
-        start = Offset(rightEyeX - w * 0.09f, browY - h * 0.015f),
-        end = Offset(rightEyeX + w * 0.09f, browY),
-        strokeWidth = w * 0.028f,
+        startAngle = 200f,
+        sweepAngle = 140f,
+        useCenter = false,
+        topLeft = Offset(rightEyeX - w * 0.075f, browY - h * 0.02f),
+        size = Size(w * 0.15f, h * 0.05f),
+        style = androidx.compose.ui.graphics.drawscope.Stroke(width = w * 0.026f),
+    )
+
+    // Hidung: dua titik kecil di antara/bawah mata (sesuai referensi)
+    val noseY = pupilY + pupilR + h * 0.045f
+    val noseR = w * 0.016f
+    drawCircle(
+        color = SelaV7.mascotPupil,
+        radius = noseR,
+        center = Offset(w * 0.5f - w * 0.028f, noseY),
+    )
+    drawCircle(
+        color = SelaV7.mascotPupil,
+        radius = noseR,
+        center = Offset(w * 0.5f + w * 0.028f, noseY),
     )
 }
 

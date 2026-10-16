@@ -16,8 +16,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import id.sela.assistant.ChatGptAuth
+import id.sela.assistant.KonduktorAi
+import id.sela.assistant.SelaAiClient
 import id.sela.designsystem.SelaV7
 import id.sela.designsystem.components.V7Mascot
+import kotlinx.coroutines.launch
 
 /** Satu pesan chat. */
 data class V7ChatMessage(
@@ -28,22 +32,66 @@ data class V7ChatMessage(
 /**
  * Tanya SELA V7 — sesuai 09_TANYA_ACUAN.png.
  * Header avatar maskot, bubble chat (krem masuk / periwinkle keluar),
- * input di bawah dengan tombol kirim.
+ * pemilih model AI, input di bawah dengan tombol kirim.
  *
- * TODO: hubungkan ke SelaAiLogic / model AI yang sudah ada.
+ * Terhubung ke SelaAiClient (ChatGPT via akun pengguna). Jika belum login,
+ * pakai jawaban rule-based offline (KonduktorAi) yang jujur menyebut mode offline.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun V7AskScreen(
-    messages: List<V7ChatMessage> = listOf(
-        V7ChatMessage("Halo! Ada yang bisa saya bantu?", false),
-    ),
-    onSend: (String) -> Unit = {},
-) {
+fun V7AskScreen() {
+    var messages by remember {
+        mutableStateOf(listOf(V7ChatMessage("Halo! Ada yang bisa saya bantu?", false)))
+    }
     var input by remember { mutableStateOf("") }
+    var sending by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
+
+    val authState by ChatGptAuth.authState.collectAsState()
+    val loggedIn = authState is ChatGptAuth.AuthState.LoggedIn
+
+    // Pemilih model — dinamis dari akun, fallback statis
+    var selectedModel by remember { mutableStateOf(SelaAiClient.DEFAULT_MODEL) }
+    var modelOptions by remember { mutableStateOf(SelaAiClient.MODELS) }
+    var modelMenuOpen by remember { mutableStateOf(false) }
+    var modelsLoading by remember { mutableStateOf(false) }
+    LaunchedEffect(loggedIn) {
+        if (loggedIn && !modelsLoading) {
+            modelsLoading = true
+            modelOptions = SelaAiClient.availableModels()
+            if (selectedModel !in modelOptions) {
+                selectedModel = modelOptions.firstOrNull() ?: SelaAiClient.DEFAULT_MODEL
+            }
+        }
+    }
 
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) listState.animateScrollToItem(messages.size - 1)
+    }
+
+    fun send() {
+        val text = input.trim()
+        if (text.isEmpty() || sending) return
+        sending = true
+        input = ""
+        scope.launch {
+            messages = messages + V7ChatMessage(text, true)
+            val reply = if (loggedIn) {
+                when (val r = SelaAiClient.ask(text, selectedModel)) {
+                    is SelaAiClient.AiResult.Ok -> r.text
+                    is SelaAiClient.AiResult.NeedLogin ->
+                        "Sesi ChatGPT berakhir. Login ulang ya."
+                    is SelaAiClient.AiResult.Error -> r.message
+                }
+            } else {
+                // Mode offline yang jujur — jawaban rule-based lokal
+                KonduktorAi.reply(text) +
+                    "\n\n(Mode offline — login ChatGPT untuk jawaban AI.)"
+            }
+            messages = messages + V7ChatMessage(reply, false)
+            sending = false
+        }
     }
 
     Column(
@@ -68,7 +116,7 @@ fun V7AskScreen(
             ) {
                 V7Mascot(size = 40.dp)
             }
-            Column {
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = "Tanya SELA",
                     style = MaterialTheme.typography.titleLarge,
@@ -76,10 +124,44 @@ fun V7AskScreen(
                     color = SelaV7.ink,
                 )
                 Text(
-                    text = "Tanya apa saja tentang transportasi, rute, atau kota ini",
+                    text = if (loggedIn) "AI terhubung" else "Mode offline",
                     style = MaterialTheme.typography.bodySmall,
-                    color = SelaV7.inkSoft,
+                    color = if (loggedIn) SelaV7.success else SelaV7.inkSoft,
                 )
+            }
+            // Pemilih model (hanya saat login)
+            if (loggedIn) {
+                ExposedDropdownMenuBox(
+                    expanded = modelMenuOpen,
+                    onExpandedChange = { modelMenuOpen = !modelMenuOpen },
+                ) {
+                    OutlinedButton(
+                        onClick = { modelMenuOpen = !modelMenuOpen },
+                        modifier = Modifier.menuAnchor(),
+                        shape = RoundedCornerShape(20.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                    ) {
+                        Text(
+                            text = selectedModel,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = SelaV7.ink,
+                        )
+                    }
+                    ExposedDropdownMenu(
+                        expanded = modelMenuOpen,
+                        onDismissRequest = { modelMenuOpen = false },
+                    ) {
+                        modelOptions.forEach { model ->
+                            DropdownMenuItem(
+                                text = { Text(model, color = SelaV7.ink) },
+                                onClick = {
+                                    selectedModel = model
+                                    modelMenuOpen = false
+                                },
+                            )
+                        }
+                    }
+                }
             }
         }
 
@@ -94,6 +176,22 @@ fun V7AskScreen(
         ) {
             items(messages) { msg ->
                 V7ChatBubble(message = msg)
+            }
+            if (sending) {
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Start,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        V7Mascot(size = 36.dp, modifier = Modifier.padding(end = 6.dp))
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = SelaV7.limeDeep,
+                            strokeWidth = 2.dp,
+                        )
+                    }
+                }
             }
         }
 
@@ -124,14 +222,7 @@ fun V7AskScreen(
                 color = SelaV7.ink,
                 modifier = Modifier.size(52.dp),
             ) {
-                IconButton(
-                    onClick = {
-                        if (input.isNotBlank()) {
-                            onSend(input.trim())
-                            input = ""
-                        }
-                    },
-                ) {
+                IconButton(onClick = ::send, enabled = !sending) {
                     Icon(
                         Icons.AutoMirrored.Filled.Send,
                         contentDescription = "Kirim",

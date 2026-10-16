@@ -49,6 +49,22 @@ import id.sela.designsystem.SelaFloatingDock
 import id.sela.designsystem.SelaPastel
 import id.sela.designsystem.SelaPastelShapes
 import id.sela.designsystem.SelaPastelTheme
+import id.sela.designsystem.SelaV7
+import id.sela.designsystem.SelaV7Theme
+import id.sela.designsystem.components.V7BottomNav
+import id.sela.v7.V7SplashScreen
+import id.sela.v7.V7LoadingScreen
+import id.sela.v7.V7LoginScreen
+import id.sela.v7.V7HomeScreen
+import id.sela.v7.V7RouteSearchScreen
+import id.sela.v7.V7RouteDetailScreen
+import id.sela.v7.V7MusicScreen
+import id.sela.v7.V7AskScreen
+import id.sela.v7.V7ChatMessage
+import id.sela.v7.V7OtherScreen
+import id.sela.v7.V7SettingsScreen
+import id.sela.v7.V7ProfileScreen
+import id.sela.v7.V7DrawerContent
 import id.sela.feature.map.*
 import id.sela.feature.music.di.MusicControllerEntryPoint
 import id.sela.feature.music.playback.SelaMusicController
@@ -111,8 +127,8 @@ interface ThemePrefsEntryPoint {
             val map3d by prefs.map3dEnabled.collectAsState(initial = false)
             val touristMode by prefs.touristMode.collectAsState(initial = false)
             val context = LocalContext.current
-            // Tema pastel "Pagi Cerah" — satu-satunya tema (tanpa varian gelap).
-            SelaPastelTheme {
+            // Tema V7 "Plopp" — satu-satunya tema redesign.
+            SelaV7Theme {
                 SelaScaffold(
                     show3dBuildings = map3d,
                     stopExtras = StopSheetExtras(
@@ -222,8 +238,12 @@ private fun PastelNavItem(
         }
     }
     val homeState by map.uiState.collectAsStateWithLifecycle()
-    val showBottomBar = currentRoute in listOf("home", "map", "music", "history", "trip-planner", "konduktor", "settings")
-    // SELA Music: mini-player global (di atas dock, terlihat di semua tab utama)
+    // V7: bottom nav hanya di 5 tab utama (Beranda, Peta, Musik, Tanya, Lainnya)
+    val showBottomBar = currentRoute in listOf("home", "map", "music", "konduktor", "lainnya")
+    // Drawer state untuk side menu V7
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
+    // SELA Music: mini-player global (di atas nav, terlihat di semua tab utama)
     val musicControllerEntry = remember {
         EntryPointAccessors.fromApplication(
             context.applicationContext,
@@ -232,12 +252,28 @@ private fun PastelNavItem(
     }
     val musicController: SelaMusicController = remember { musicControllerEntry.musicController() }
     val musicState by musicController.state.collectAsStateWithLifecycle()
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            V7DrawerContent(
+                currentRoute = currentRoute,
+                onNavigate = { route ->
+                    nav.navigate(route) {
+                        launchSingleTop = true
+                        popUpTo(nav.graph.startDestinationId) { saveState = true }
+                        restoreState = true
+                    }
+                },
+                onClose = { scope.launch { drawerState.close() } },
+            )
+        },
+    ) {
     Scaffold(
-        containerColor = SelaPastel.background,
+        containerColor = SelaV7.background,
         bottomBar = {
             if (showBottomBar) {
                 Column(Modifier.fillMaxWidth()) {
-                    // Mini-player mengambang di atas dock (tap -> buka tab Musik)
+                    // Mini-player mengambang di atas nav (tap -> buka tab Musik)
                     if (musicState.currentSong != null && currentRoute != "music") {
                         MiniPlayer(
                             state = musicState,
@@ -250,20 +286,11 @@ private fun PastelNavItem(
                         )
                     }
                     Box(
-                        Modifier.fillMaxWidth().navigationBarsPadding()
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        Modifier.fillMaxWidth().navigationBarsPadding(),
                         contentAlignment = Alignment.Center,
                     ) {
-                    SelaFloatingDock(
-                        destinations = listOf(
-                            SelaDockDestination("home", "Beranda", Icons.Default.Home),
-                            SelaDockDestination("map", "Peta", Icons.Default.Map),
-                            SelaDockDestination("trip-planner", "Rute", Icons.Default.Route),
-                            SelaDockDestination("music", "Musik", Icons.Default.LibraryMusic),
-                            SelaDockDestination("konduktor", "Tanya", Icons.Default.Chat),
-                            SelaDockDestination("settings", "Lainnya", Icons.Default.Settings),
-                        ),
-                        currentRoute = if (currentRoute == "history") "settings" else currentRoute,
+                    V7BottomNav(
+                        currentRoute = currentRoute,
                         onNavigate = { route ->
                             nav.navigate(route) {
                                 launchSingleTop = true
@@ -272,19 +299,34 @@ private fun PastelNavItem(
                             }
                         },
                     )
-                    } // Box dock
-                } // Column (mini-player + dock)
+                    } // Box nav
+                } // Column (mini-player + nav)
             }
         },
     ) { padding ->
-        // TUGAS C: Login gate — cek session, jika belum login tampilkan SelaLoginScreen
+        // V7: Login gate — splash dulu, lalu cek session
             val authViewModel: AuthViewModel = hiltViewModel()
             val authState by authViewModel.uiState.collectAsStateWithLifecycle()
-            val startDest = if (authState.isSignedIn) "home" else "login"
+            // State untuk plan yang dipilih (navigasi Cari Rute -> Detail Rute)
+            var selectedPlan by remember { mutableStateOf<id.sela.model.TripPlan?>(null) }
+            // State chat Tanya SELA
+            var chatMessages by remember {
+                mutableStateOf(listOf(V7ChatMessage("Halo! Ada yang bisa saya bantu?", false)))
+            }
+            val startDest = "splash"
             NavHost(nav, startDestination = startDest, modifier = Modifier.fillMaxSize().padding(padding)) {
+            composable("splash") {
+                V7SplashScreen(
+                    onTimeout = {
+                        nav.navigate(if (authState.isSignedIn) "home" else "login") {
+                            popUpTo("splash") { inclusive = true }
+                        }
+                    },
+                )
+            }
             composable("login") {
                 val activity = LocalContext.current as android.app.Activity
-                SelaLoginScreen(
+                V7LoginScreen(
                     onGoogleSignIn = {
                         // Web Client ID dari BuildConfig; kosong = belum dikonfigurasi
                         val webClientId = BuildConfig.GOOGLE_WEB_CLIENT_ID
@@ -303,20 +345,15 @@ private fun PastelNavItem(
                 }
             }
             composable("home") {
-                SelaHomeScreen(
+                V7HomeScreen(
                     state = homeState,
+                    userName = authState.user?.displayName,
                     onOpenMap = { nav.navigate("map") { launchSingleTop = true } },
                     onPlanTrip = { nav.navigate("trip-planner") { launchSingleTop = true } },
-                    onOpenHistory = { nav.navigate("history") { launchSingleTop = true } },
+                    onOpenMusic = { nav.navigate("music") { launchSingleTop = true } },
                     onOpenAssistant = { nav.navigate("konduktor") { launchSingleTop = true } },
-                    onSelectRoute = { id ->
-                        map.select("route", id)
-                        nav.navigate("map") { launchSingleTop = true }
-                    },
-                    onSelectStop = { id ->
-                        map.select("stop", id)
-                        nav.navigate("map") { launchSingleTop = true }
-                    },
+                    onOpenFavorites = { nav.navigate("lainnya") { launchSingleTop = true } },
+                    onOpenOther = { nav.navigate("lainnya") { launchSingleTop = true } },
                 )
             }
             composable("map") {
@@ -329,8 +366,44 @@ private fun PastelNavItem(
                     )
                 }
             }
+            // V7: Lainnya (pengganti settings sebagai tab)
+            composable("lainnya") {
+                V7OtherScreen(
+                    onNavigate = { route ->
+                        when (route) {
+                            "favorit", "notifikasi" -> { /* TODO */ }
+                            else -> nav.navigate(route)
+                        }
+                    },
+                )
+            }
+            // V7: Pengaturan terpisah (tanpa bottom nav)
+            composable("pengaturan") {
+                V7SettingsScreen(
+                    onBack = { nav.popBackStack() },
+                    onNavigate = { route -> nav.navigate(route) },
+                    onLogout = {
+                        authViewModel.signOut()
+                        nav.navigate("login") {
+                            popUpTo("login") { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    },
+                )
+            }
+            // V7: Profil terpisah
+            composable("profile") {
+                V7ProfileScreen(
+                    onBack = { nav.popBackStack() },
+                    userName = authState.user?.displayName ?: "Pengguna SELA",
+                    userEmail = authState.user?.email ?: "pengguna@gmail.com",
+                    onNavigate = { route -> nav.navigate(route) },
+                )
+            }
+            // Legacy settings (tetap untuk kompatibilitas)
             composable("settings") {
-                SettingsScreen(
+                V7SettingsScreen(
+                    onBack = { nav.popBackStack() },
                     onNavigate = { route -> nav.navigate(route) },
                     onLogout = {
                         authViewModel.signOut()
@@ -343,9 +416,46 @@ private fun PastelNavItem(
             }
             composable("history") { HistoryScreen(onBack = { nav.popBackStack() }) }
             composable("peta-offline") { OfflineMapScreen(onBack = { nav.popBackStack() }) }
-            composable("trip-planner") { TripPlannerScreen(onBack = { nav.popBackStack() }) }
-            composable("konduktor") { KonduktorScreen() }
-            composable("music") { MusicTabScreen() }
+            // V7: Cari Rute (pengganti trip-planner)
+            composable("trip-planner") {
+                V7RouteSearchScreen(
+                    onBack = { nav.popBackStack() },
+                    onSelectPlan = { plan ->
+                        selectedPlan = plan
+                        nav.navigate("route-detail")
+                    },
+                )
+            }
+            // V7: Detail Rute terpisah
+            composable("route-detail") {
+                val plan = selectedPlan
+                if (plan != null) {
+                    V7RouteDetailScreen(
+                        plan = plan,
+                        onBack = { nav.popBackStack() },
+                        onStartNavigation = {
+                            nav.navigate("map") { launchSingleTop = true }
+                        },
+                        onSave = { /* TODO: simpan favorit */ },
+                    )
+                } else {
+                    nav.popBackStack()
+                }
+            }
+            composable("konduktor") {
+                V7AskScreen(
+                    messages = chatMessages,
+                    onSend = { text ->
+                        chatMessages = chatMessages + V7ChatMessage(text, true)
+                        // TODO: hubungkan ke SelaAiLogic untuk jawaban AI
+                        chatMessages = chatMessages + V7ChatMessage(
+                            "Maaf, AI belum terhubung. Coba lagi nanti.",
+                            false,
+                        )
+                    },
+                )
+            }
+            composable("music") { V7MusicScreen() }
             composable("sos") { SosScreen() }
             composable("mesh") { MeshScreen() }
             composable(
@@ -362,4 +472,5 @@ private fun PastelNavItem(
             }
         }
     }
+    } // ModalNavigationDrawer
 }

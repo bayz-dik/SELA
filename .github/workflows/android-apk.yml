@@ -23,16 +23,17 @@ jobs:
           echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
           echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
 
-      - name: Generate keystore
+      - name: Restore persistent keystores (SHA-1 terdaftar di Firebase)
         run: |
-          rm -f android/app/sela-release.keystore
-          keytool -genkeypair -v \
-            -keystore android/app/sela-release.keystore \
-            -alias "${{ secrets.SELA_KEY_ALIAS }}" \
-            -keyalg RSA -keysize 2048 -validity 10000 \
-            -storepass "${{ secrets.SELA_KEYSTORE_PASSWORD }}" \
-            -keypass "${{ secrets.SELA_KEY_PASSWORD }}" \
-            -dname "CN=SELA, OU=SELA, O=SELA, L=Jakarta, ST=Jakarta, C=ID"
+          echo "${{ secrets.SELA_RELEASE_KEYSTORE_B64 }}" | base64 -d > android/app/sela-release.keystore
+          echo "${{ secrets.SELA_DEBUG_KEYSTORE_B64 }}" | base64 -d > android/app/sela-debug.keystore
+          echo "Keystore dipulihkan (persistent, SHA-1 stabil untuk Firebase)"
+
+      - name: Restore google-services.json & Web Client ID
+        run: |
+          echo "${{ secrets.GOOGLE_SERVICES_JSON_B64 }}" | base64 -d > android/app/google-services.json
+          echo "google.webClientId=${{ secrets.GOOGLE_WEB_CLIENT_ID }}" > android/local.properties
+          echo "google-services.json & webClientId dipulihkan dari secrets"
 
       - name: Build release APK
         run: |

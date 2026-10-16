@@ -17,8 +17,8 @@ fun SelaV7Theme(
     darkMode: Boolean = false,
     content: @Composable () -> Unit,
 ) {
-    // Sinkronkan palet SelaV7 sebelum konten digambar — semua layar
-    // membaca SelaV7.background/ink/dll saat recomposition.
+    // Sinkronkan palet SelaV7 — assignment volatile idempoten, aman dipanggil
+    // saat composition (tidak memicu recomposition karena SelaV7.* bukan State).
     SelaV7.setDarkMode(darkMode)
     MaterialTheme(
         colorScheme = if (darkMode) SelaV7DarkScheme else SelaV7Scheme,

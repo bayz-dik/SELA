@@ -25,13 +25,21 @@ import javax.inject.Singleton
  */
 @Singleton
 class GoogleSignInClient @Inject constructor() {
-    private val auth: FirebaseAuth by lazy { FirebaseAuth.getInstance() }
+    /**
+     * Anti-crash: FirebaseAuth.getInstance() throw IllegalStateException jika
+     * FirebaseApp belum ter-init (mis. google-services.json bermasalah).
+     * Jangan biarkan ini crash saat startup — anggap belum login.
+     */
+    private val auth: FirebaseAuth? by lazy {
+        runCatching { FirebaseAuth.getInstance() }.getOrNull()
+    }
 
-    val isSignedIn: Boolean get() = auth.currentUser != null
-    val currentUserEmail: String? get() = auth.currentUser?.email
-    val currentUserName: String? get() = auth.currentUser?.displayName
+    val isSignedIn: Boolean get() = auth?.currentUser != null
+    val currentUserEmail: String? get() = auth?.currentUser?.email
+    val currentUserName: String? get() = auth?.currentUser?.displayName
 
     suspend fun signIn(activity: Activity, webClientId: String): Result<Unit> = runCatching {
+        val firebaseAuth = auth ?: error("Firebase belum terinisialisasi. Cek google-services.json.")
         require(webClientId.isNotBlank()) {
             "Web Client ID belum dikonfigurasi. Lihat README_FIREBASE_SETUP.md"
         }
@@ -50,9 +58,9 @@ class GoogleSignInClient @Inject constructor() {
             "Credential yang diterima bukan Google ID token"
         }
         val token = GoogleIdTokenCredential.createFrom(credential.data).idToken
-        auth.signInWithCredential(GoogleAuthProvider.getCredential(token, null)).await()
-        check(auth.currentUser != null) { "Google login tidak mengembalikan pengguna" }
+        firebaseAuth.signInWithCredential(GoogleAuthProvider.getCredential(token, null)).await()
+        check(firebaseAuth.currentUser != null) { "Google login tidak mengembalikan pengguna" }
     }
 
-    fun signOut() = auth.signOut()
+    fun signOut() { auth?.signOut() }
 }

@@ -35,17 +35,15 @@ interface SelaAppEntryPoint {
 @HiltAndroidApp
 class SelaApplication : Application() {
     override fun onCreate() {
-        // DEBUG SEMENTARA — crash capturer: tulis stack trace ke folder Download
-        // publik (Download/sela-crash.log) agar bisa dibuka Bayu via file manager
-        // tanpa root/Shizuku, lalu CHAIN ke default handler agar dialog crash tetap muncul.
+        // Crash capturer: tulis stack trace ke Download/sela-crash.log via MediaStore
+        // (works di Android 10+ tanpa permission) agar bisa dibuka Bayu via file
+        // manager, lalu CHAIN ke default handler agar dialog crash tetap muncul.
         val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
             runCatching {
                 val trace = android.util.Log.getStackTraceString(throwable)
                 val info = "SELA Crash - ${java.util.Date()}\nThread: ${thread.name}\n$trace\n---\n"
-                val downloads = android.os.Environment.getExternalStoragePublicDirectory(
-                    android.os.Environment.DIRECTORY_DOWNLOADS)
-                java.io.File(downloads, "sela-crash.log").appendText(info)
+                writeCrashLog(this, info)
             }
             defaultHandler?.uncaughtException(thread, throwable)
         }
@@ -88,6 +86,63 @@ class SelaApplication : Application() {
         val reminder = entry.commuteReminder()
         CoroutineScope(SupervisorJob() + Dispatchers.Main).launch {
             runCatching { reminder.checkAndNotify(this@SelaApplication) }
+        }
+    }
+
+    companion object {
+        /**
+         * Tulis crash log ke Download/sela-crash.log via MediaStore.
+         * Works di Android 10+ (API 29+) tanpa permission apapun.
+         * Untuk API < 29, fallback ke file langsung (butuh WRITE_EXTERNAL_STORAGE
+         * yang sudah ada di manifest untuk versi lama).
+         */
+        fun writeCrashLog(context: android.content.Context, info: String) {
+            runCatching {
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                    val resolver = context.contentResolver
+                    val fileName = "sela-crash.log"
+                    // Cek apakah file sudah ada — append jika ada
+                    var existing = ""
+                    runCatching {
+                        val queryUri = android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI
+                        resolver.query(
+                            queryUri,
+                            arrayOf(android.provider.MediaStore.Downloads._ID),
+                            "${android.provider.MediaStore.Downloads.DISPLAY_NAME} = ?",
+                            arrayOf(fileName), null,
+                        )?.use { cursor ->
+                            if (cursor.moveToFirst()) {
+                                val id = cursor.getLong(0)
+                                val uri = android.content.ContentUris.withAppendedId(queryUri, id)
+                                resolver.openInputStream(uri)?.use { stream ->
+                                    existing = stream.bufferedReader().readText()
+                                }
+                                resolver.delete(uri, null, null)
+                            }
+                        }
+                    }
+                    val values = android.content.ContentValues().apply {
+                        put(android.provider.MediaStore.Downloads.DISPLAY_NAME, fileName)
+                        put(android.provider.MediaStore.Downloads.MIME_TYPE, "text/plain")
+                        put(
+                            android.provider.MediaStore.Downloads.RELATIVE_PATH,
+                            android.os.Environment.DIRECTORY_DOWNLOADS,
+                        )
+                    }
+                    val uri = resolver.insert(
+                        android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI, values,
+                    ) ?: return
+                    resolver.openOutputStream(uri)?.use { stream ->
+                        stream.write((existing + info).toByteArray())
+                    }
+                } else {
+                    @Suppress("DEPRECATION")
+                    val downloads = android.os.Environment.getExternalStoragePublicDirectory(
+                        android.os.Environment.DIRECTORY_DOWNLOADS,
+                    )
+                    java.io.File(downloads, "sela-crash.log").appendText(info)
+                }
+            }
         }
     }
 }

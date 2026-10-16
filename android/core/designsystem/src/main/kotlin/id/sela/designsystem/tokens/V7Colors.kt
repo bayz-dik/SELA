@@ -37,50 +37,54 @@ data class SelaV7Palette(
     val chatIncoming: Color,
 )
 
-private val SelaV7LightPalette = SelaV7Palette(
-    background = Color(0xFFFFFDF1),
-    surface = Color(0xFFFFFEF8),
-    surfaceDim = Color(0xFFF5F0DC),
-    ink = Color(0xFF06133E),
-    inkSoft = Color(0xFF3D4A6B),
-    inkFaint = Color(0xFF8A93B2),
-    hairline = Color(0xFFE8E2CC),
-    limeSoft = Color(0xFFE4F9B8),
-    periSoft = Color(0xFFDFE6FF),
-    dangerSoft = Color(0xFFFBDCDC),
-    successSoft = Color(0xFFD9F2E2),
-    warningSoft = Color(0xFFFBEBD2),
-    chatIncoming = Color(0xFFF0EDDF),
-)
-
-private val SelaV7DarkPalette = SelaV7Palette(
-    background = Color(0xFF0A1128),
-    surface = Color(0xFF111A36),
-    surfaceDim = Color(0xFF1A2342),
-    ink = Color(0xFFF2F4FA),
-    inkSoft = Color(0xFFB9C2D8),
-    inkFaint = Color(0xFF7A86A3),
-    hairline = Color(0xFF232E52),
-    limeSoft = Color(0xFF2E3A10),
-    periSoft = Color(0xFF232B52),
-    dangerSoft = Color(0xFF4A1D1F),
-    successSoft = Color(0xFF1A3A28),
-    warningSoft = Color(0xFF4A3418),
-    chatIncoming = Color(0xFF1A2342),
-)
-
 object SelaV7 {
+    // Palet ditaruh DI DALAM object (bukan top-level) agar tidak ada
+    // circular static init: SelaV7 -> top-level palette -> V7ColorsKt.<clinit>
+    // -> SelaV7Scheme -> SelaV7.lime (belum init) -> NPE.
+    // Dengan ini, SelaV7.<clinit> self-contained tanpa dependensi eksternal.
+    private val lightPalette = SelaV7Palette(
+        background = Color(0xFFFFFDF1),
+        surface = Color(0xFFFFFEF8),
+        surfaceDim = Color(0xFFF5F0DC),
+        ink = Color(0xFF06133E),
+        inkSoft = Color(0xFF3D4A6B),
+        inkFaint = Color(0xFF8A93B2),
+        hairline = Color(0xFFE8E2CC),
+        limeSoft = Color(0xFFE4F9B8),
+        periSoft = Color(0xFFDFE6FF),
+        dangerSoft = Color(0xFFFBDCDC),
+        successSoft = Color(0xFFD9F2E2),
+        warningSoft = Color(0xFFFBEBD2),
+        chatIncoming = Color(0xFFF0EDDF),
+    )
+
+    private val darkPalette = SelaV7Palette(
+        background = Color(0xFF0A1128),
+        surface = Color(0xFF111A36),
+        surfaceDim = Color(0xFF1A2342),
+        ink = Color(0xFFF2F4FA),
+        inkSoft = Color(0xFFB9C2D8),
+        inkFaint = Color(0xFF7A86A3),
+        hairline = Color(0xFF232E52),
+        limeSoft = Color(0xFF2E3A10),
+        periSoft = Color(0xFF232B52),
+        dangerSoft = Color(0xFF4A1D1F),
+        successSoft = Color(0xFF1A3A28),
+        warningSoft = Color(0xFF4A3418),
+        chatIncoming = Color(0xFF1A2342),
+    )
+
     /**
      * Palet aktif — diganti oleh [id.sela.designsystem.SelaV7Theme] sesuai mode.
      * Semua properti di bawah membaca palet aktif, jadi toggle dark mode
      * langsung tercermin di seluruh layar tanpa ubah call site.
      */
     @Volatile
-    internal var palette: SelaV7Palette = SelaV7LightPalette
+    internal var palette: SelaV7Palette = lightPalette
         private set
 
     internal fun setDarkMode(dark: Boolean) {
-        palette = if (dark) SelaV7DarkPalette else SelaV7LightPalette
+        palette = if (dark) darkPalette else lightPalette
     }
 
     // Latar (mengikuti mode)
@@ -131,8 +135,10 @@ object SelaV7 {
     val chatOutgoing = Color(0xFF91A6FF)
 }
 
-/** Skema gelap V7 — navy pekat, lime tetap sebagai identitas. */
-val SelaV7DarkScheme = darkColorScheme(
+/** Skema gelap V7 — navy pekat, lime tetap sebagai identitas.
+ * Lazy agar tidak di-init saat V7ColorsKt.<clinit> (hindari circular static init). */
+val SelaV7DarkScheme by lazy {
+    darkColorScheme(
     primary = SelaV7.lime,
     onPrimary = Color(0xFF0A1128),
     primaryContainer = Color(0xFF3A4A12),
@@ -160,10 +166,13 @@ val SelaV7DarkScheme = darkColorScheme(
     inverseOnSurface = Color(0xFF06133E),
     inversePrimary = SelaV7.limeDeep,
     scrim = Color.Black,
-)
+    )
+}
 
-/** Skema terang V7 — satu-satunya tema redesign. */
-val SelaV7Scheme = lightColorScheme(
+/** Skema terang V7 — satu-satunya tema redesign.
+ * Lazy agar tidak di-init saat V7ColorsKt.<clinit> (hindari circular static init). */
+val SelaV7Scheme by lazy {
+    lightColorScheme(
     primary = SelaV7.lime,
     onPrimary = SelaV7.ink,
     primaryContainer = SelaV7.limeSoft,
@@ -191,4 +200,5 @@ val SelaV7Scheme = lightColorScheme(
     inverseOnSurface = SelaV7.background,
     inversePrimary = SelaV7.lime,
     scrim = SelaV7.ink,
-)
+    )
+}

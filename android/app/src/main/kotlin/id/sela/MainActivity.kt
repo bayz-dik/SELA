@@ -347,7 +347,7 @@ private fun PastelNavItem(
             composable("home") {
                 V7HomeScreen(
                     state = homeState,
-                    userName = authState.user?.displayName,
+                    userName = authState.userName,
                     onOpenMap = { nav.navigate("map") { launchSingleTop = true } },
                     onPlanTrip = { nav.navigate("trip-planner") { launchSingleTop = true } },
                     onOpenMusic = { nav.navigate("music") { launchSingleTop = true } },
@@ -395,8 +395,8 @@ private fun PastelNavItem(
             composable("profile") {
                 V7ProfileScreen(
                     onBack = { nav.popBackStack() },
-                    userName = authState.user?.displayName ?: "Pengguna SELA",
-                    userEmail = authState.user?.email ?: "pengguna@gmail.com",
+                    userName = authState.userName ?: "Pengguna SELA",
+                    userEmail = authState.userEmail ?: "pengguna@gmail.com",
                     onNavigate = { route -> nav.navigate(route) },
                 )
             }

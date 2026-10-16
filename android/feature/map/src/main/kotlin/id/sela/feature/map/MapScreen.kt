@@ -87,9 +87,9 @@ fun ConnectionPill(status: ConnectionStatus, hasVehicles: Boolean) {
         ) {
             PastelPulseDot(
                 active = active,
-                color = if (status == ConnectionStatus.ERROR) SelaPastel.danger else SelaPastel.mintDeep,
+                color = if (status == ConnectionStatus.ERROR) SelaV7.danger else SelaV7.limeDeep,
             )
-            Text(text, style = MaterialTheme.typography.labelMedium, color = SelaPastel.ink)
+            Text(text, style = MaterialTheme.typography.labelMedium, color = SelaV7.ink)
         }
     }
 }
@@ -124,9 +124,9 @@ private fun SelaMapStatusStrip(state: MapUiState) {
                 },
                 diameter = 40.dp,
                 animate = !offline,
-                bodyColor = if (error) SelaPastel.peach else SelaPastel.lavender,
+                bodyColor = if (error) SelaV7.warningSoft else SelaV7.periSoft,
             )
-            Text(title, style = MaterialTheme.typography.labelMedium, color = SelaPastel.ink)
+            Text(title, style = MaterialTheme.typography.labelMedium, color = SelaV7.ink)
         }
     }
 }
@@ -150,7 +150,7 @@ fun ServiceLegend() {
             ServiceType.entries.forEach {
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                     Surface(shape = CircleShape, color = it.pastelColor(), modifier = Modifier.size(10.dp)) {}
-                    Text(it.label(), style = MaterialTheme.typography.labelMedium, color = SelaPastel.inkSoft)
+                    Text(it.label(), style = MaterialTheme.typography.labelMedium, color = SelaV7.inkSoft)
                 }
             }
         }
@@ -187,7 +187,7 @@ private fun FilterGlassPill(
             Text(
                 text,
                 style = MaterialTheme.typography.labelLarge,
-                color = if (selected) SelaPastel.ink else SelaPastel.inkSoft,
+                color = if (selected) SelaV7.ink else SelaV7.inkSoft,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -209,8 +209,8 @@ private fun DockButton(icon: androidx.compose.ui.graphics.vector.ImageVector, la
             .padding(horizontal = 14.dp, vertical = 10.dp)
             .semantics { contentDescription = label },
     ) {
-        Icon(icon, contentDescription = null, tint = SelaPastel.ink, modifier = Modifier.size(24.dp))
-        Text(label, style = MaterialTheme.typography.labelSmall, color = SelaPastel.inkSoft)
+        Icon(icon, contentDescription = null, tint = SelaV7.ink, modifier = Modifier.size(24.dp))
+        Text(label, style = MaterialTheme.typography.labelSmall, color = SelaV7.inkSoft)
     }
 }
 
@@ -239,8 +239,8 @@ private fun MapDock(
         Surface(
             onClick = onLocate,
             shape = CircleShape,
-            color = if (followActive) SelaPastel.mint.copy(alpha = 0.95f) else Color.White.copy(alpha = 0.9f),
-            contentColor = if (followActive) SelaPastel.mintDeep else SelaPastel.blueDeep,
+            color = if (followActive) SelaV7.lime.copy(alpha = 0.95f) else Color.White.copy(alpha = 0.9f),
+            contentColor = if (followActive) SelaV7.limeDeep else SelaV7.periDeep,
             border = BorderStroke(1.dp, Color.White.copy(alpha = 0.75f)),
             modifier = Modifier
                 .size(64.dp)
@@ -305,8 +305,8 @@ private fun ColumnScope.VehicleListSheet(state: MapUiState, onSelect: (String) -
             SelaLiveBusCard(
                 vehicleLabel = "Bus ${bus.id}",
                 routeLabel = route?.let { "${it.shortName} · ${it.longName}" } ?: "Rute ${bus.routeId}",
-                tint = type?.pastelColor() ?: SelaPastel.blueSoft,
-                deep = type?.pastelDeepColor() ?: SelaPastel.blueDeep,
+                tint = type?.pastelColor() ?: SelaV7.periSoft,
+                deep = type?.pastelDeepColor() ?: SelaV7.periDeep,
                 speedKmh = bus.speedKmh,
                 onClick = { onSelect(bus.id) },
                 modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
@@ -340,8 +340,8 @@ private fun ColumnScope.StopListSheet(
                 title = stop.name,
                 subtitle = if (stop.routeIds.isNotEmpty()) "${stop.routeIds.size} rute" else "Halte",
                 leadingIcon = Icons.Default.DirectionsBus,
-                leadingTint = SelaPastel.mint,
-                leadingDeep = SelaPastel.mintDeep,
+                leadingTint = SelaV7.lime,
+                leadingDeep = SelaV7.limeDeep,
                 onClick = { onSelect(stop.id) },
                 modifier = Modifier.padding(horizontal = 12.dp),
             )
@@ -353,11 +353,11 @@ private fun ColumnScope.StopListSheet(
 fun PermissionRationale(onAllow: () -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Gunakan lokasi?", color = SelaPastel.ink) },
+        title = { Text("Gunakan lokasi?", color = SelaV7.ink) },
         text = {
             Text(
                 "Lokasi hanya dipakai saat mencari posisi Anda. Tanpa izin, peta dan pencarian tetap bisa dipakai.",
-                color = SelaPastel.inkSoft,
+                color = SelaV7.inkSoft,
             )
         },
         confirmButton = { SelaButton(text = "Lanjut", onClick = onAllow) },
@@ -633,7 +633,7 @@ fun MapScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("SELA", style = PastelWordmark, color = SelaPastel.ink)
+                Text("SELA", style = PastelWordmark, color = SelaV7.ink)
                 ConnectionPill(state.connectionStatus, state.vehicles.any { !it.isStale })
             }
             PastelSearchBar(
@@ -688,7 +688,7 @@ fun MapScreen(
                                 if (state.query.isBlank()) "Pilih halte atau rute" else "Hasil pencarian",
                                 Modifier.padding(horizontal = 20.dp, vertical = 8.dp).semantics { heading() },
                                 style = MaterialTheme.typography.titleSmall,
-                                color = SelaPastel.ink,
+                                color = SelaV7.ink,
                             )
                         }
                         if (foundStops.isEmpty() && foundRoutes.isEmpty()) {
@@ -730,8 +730,8 @@ fun MapScreen(
                                 title = s.name,
                                 subtitle = "Halte",
                                 leadingIcon = Icons.Default.DirectionsBus,
-                                leadingTint = SelaPastel.mint,
-                                leadingDeep = SelaPastel.mintDeep,
+                                leadingTint = SelaV7.lime,
+                                leadingDeep = SelaV7.limeDeep,
                                 onClick = { chooseSearch("stop", s.id) },
                                 modifier = Modifier.padding(horizontal = 8.dp),
                             )
